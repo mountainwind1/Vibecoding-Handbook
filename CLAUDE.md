@@ -1,7 +1,14 @@
-# CLAUDE.md · 项目宪法（模板 · 配套工作手册 v5.2）
+# CLAUDE.md · Claude Code 适配层（模板 · 配套工作手册 v5.3）
 
-> 每个新会话自动读入本文件。保持 200 行以内；规则变了才改。
+> Claude Code 会自动读入本文件。v5.3 起，跨工具通用规则写在 AGENTS.md / ENGINEERING.md；本文件只保留 Claude Code 专属入口和补充规则。
 > 用法：把 {占位} 换成你项目的实际内容，删掉不适用的行。
+
+## 启动顺序
+
+1. 先读 AGENTS.md。
+2. 再读 ENGINEERING.md。
+3. 再读 PRD.md / PLAN.md / DECISIONS.md / DESIGN.md 中与当前任务相关的部分。
+4. 本文件中的规则只作为 Claude Code 适配层；若与 AGENTS.md 冲突，以 AGENTS.md 为准并停下报告。
 
 ## 项目一句话
 {这个项目是什么、为谁、解决什么}（详见 PRD.md）
@@ -21,6 +28,8 @@
 ## TIER 2 · 工作方式
 
 - **一个会话只做一个任务**（PLAN.md 里的一个 T-编号），做完 commit + 勾选 + /clear。
+- **多 Agent 任务必须先 claim**：PLAN 任务状态改为 claimed / in_progress，填 Owner、Worktree、Writable Scope 后再动手。
+- **只写可写范围**：Writable Scope 之外的文件不要顺手改；必须越界时停下说明。
 - **commit 粒度**：代码改动 + PLAN 勾选本任务 + DECISIONS 追加（如有），同一个 commit。
 - **执行节奏**：任务带【可批量】标记的可在一个会话连续做几个（每个仍各自 commit）、做完汇总；带【单独+确认】的命门任务必须单独做、做完停下等人工核验。命门绝不混进批量。
 - **双轨并行**：切片内契约冻结后，前后端两泳道可并行；后端先行上限 = 本切片 + 下一切片【设计无关】任务，绝不预做未来旅程的 API；里程碑完成 = 旅程走通，收口前先"按旅程联调"。
@@ -50,6 +59,8 @@
 ## 文档指引
 
 - 需求与验收 → `PRD.md`（活文档，当前真相）
+- 多 Agent 协作入口 → `AGENTS.md`
+- 工程命令与合并门禁 → `ENGINEERING.md`
 - 任务与进度 → `PLAN.md`（只装"还要做什么"）
 - 决策历史 → `DECISIONS.md`（只增不改）
 - 版本历史 → `CHANGELOG.md`（只增不改）

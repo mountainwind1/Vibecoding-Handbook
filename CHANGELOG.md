@@ -1,4 +1,4 @@
-# CHANGELOG.md · 版本日志（模板 · 配套工作手册 v5.2）
+# CHANGELOG.md · 版本日志（模板 · 配套工作手册 v5.3）
 
 > 只增不改，新条目加在顶部。PRD 是"当前真相"，历史变更全在这里。
 > 版本号 ↔ 里程碑映射：MVP 期每合并一个里程碑记一条 `0.{n}.0`（M0=0.1.0、M1=0.2.0…，由收口验收门任务追加）；
@@ -9,6 +9,17 @@
 
 ## [Unreleased]
 - {进行中、尚未发版的变更}
+
+## [v5.3] - 2026-08-02
+### 新增
+- Multi-Agent Ready 适配层：Agent Ownership、Task Claim/State、Worktree Isolation、Writable Scope、Integration Role/Gate、Evidence Chain。
+- 新增 `AGENTS.md` 通用 Agent 入口与 `ENGINEERING.md` vendor-neutral 工程规则。
+- 新增 `MIGRATION-v5.2-to-v5.3.md`、`VERSION-DIFF.md` 和 `examples/` 示例。
+### 变更
+- `CLAUDE.md` 从唯一项目宪法调整为 Claude Code 适配层，跨工具规则上移到 AGENTS.md / ENGINEERING.md。
+- `PLAN.md` 任务模板新增状态、Owner、Worktree、Writable Scope、Evidence 字段。
+### 兼容性
+- v5.2 单人工作流保持可用；v5.3 的多 Agent 字段可按需启用。
 
 ## [{x.y.z}] - {YYYY-MM-DD}
 ### 需求变更

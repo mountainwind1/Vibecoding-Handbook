@@ -1,4 +1,4 @@
-# PLAN.md · 任务接力棒（模板 · 配套工作手册 v5.2）
+# PLAN.md · 任务接力棒（模板 · 配套工作手册 v5.3）
 
 > 只装"还要做什么"。决策进 DECISIONS.md；已完成里程碑的任务清单可归档到 PLAN-ARCHIVE.md（保留其目标/原则/边界，只归任务）。
 > 改本文件只增量编辑，禁止整文件重生成；改完 git diff 核对 checkbox。
@@ -12,6 +12,7 @@
 
 - 一会话一任务；命门【单独+确认】做完停下核验；【可批量】可一会话连做几个、各自 commit。
 - 每任务 commit = 代码 + 勾选本任务 + DECISIONS 追加（如有）。
+- 多 Agent 并行时，每任务先填状态 / Owner / Worktree / Writable Scope；未 claim 不动手。
 - 里程碑收口 = 全部任务 ✅ + **阶段 3.5 旅程走查**（断路型缺口必须补完才能进下一里程碑）+ CI 绿 + PR 合并。
 - 切下一里程碑前：`git log origin/main` 确认本里程碑全部 commit 已进 main。
 - 契约冻结后前后端可双轨并行（护栏 9）：后端先行上限 = 本切片 + 下一切片【设计无关】任务；里程碑完成永远以"旅程走通"为准。
@@ -36,21 +37,41 @@
 > 前端任务的完成定义必须含：交互四态、响应式断点、对照 DESIGN.md、布局程序化断言（无溢出/裁切，375px 重跑，见手册 B3）。
 
 - [ ] **M{x}-T1 · {任务名}** —【重型】【单独+确认】（命门）
+  状态：todo
+  Owner：{未认领}
+  Worktree：{无}
+  Writable Scope：{允许改的目录/文件}
+  Evidence：{PR / commit / checks / screenshot / log}
   内容：{做什么}
   依赖：{无 / T?}
   完成定义：{可验证的标准；测试/命令绿}
 
 - [ ] **M{x}-T2 · {任务名}** —【常规】【可批量】
+  状态：todo
+  Owner：{未认领}
+  Worktree：{无}
+  Writable Scope：{允许改的目录/文件}
+  Evidence：{PR / commit / checks / screenshot / log}
   内容：{…}
   依赖：T1
   完成定义：{…}
 
 - [ ] **M{x}-T{n-1} · 按旅程联调（两泳道汇合）** —【常规】【单独+确认】
+  状态：todo
+  Owner：Integration Owner
+  Worktree：{integration 分支 / PR}
+  Writable Scope：{集成涉及文件}
+  Evidence：{联调记录 / checks / screenshot}
   内容：对照 PRD 用户旅程逐步联调：错误码→错误态映射、加载时序、边界值（两端各自对契约绿 ≠ 拼起来对）。
   依赖：两泳道全部任务
   完成定义：整条旅程在真实前后端拼装下走通，无契约不匹配。
 
 - [ ] **M{x}-T{n} · 端到端 + 旅程走查 + 收口 + PR** —【常规】【单独+确认】（DoD 验收门）
+  状态：todo
+  Owner：Integration Owner
+  Worktree：{integration 分支 / PR}
+  Writable Scope：PLAN.md / CHANGELOG.md / 收口证据
+  Evidence：{PR / CI / E2E / 审计 / 归档 commit}
   内容：端到端实证本里程碑 DoD；以新用户身份走一遍完整旅程（阶段 3.5），记录并处理断路型缺口；涉敏里程碑（鉴权/支付/PII/上传/输入入库）用子代理/新会话跑 A5 安全审计，高危清零；四根命令全绿；`gh pr checks` 确认 CI 绿后开 PR；CHANGELOG 顶部追加 `0.{n}.0` 条目；本里程碑任务清单移入 PLAN-ARCHIVE（PLAN 留一行）；删除已合并分支（本地+远程）；（有子系统文档时）同步 `{DOMAIN}.md` 并更新"最后同步"戳。
   依赖：T1–T{n-1}
   完成定义：DoD 实证留痕；旅程走查无断路；（涉敏）A5 无高危；CI 绿；PR 开启；CHANGELOG 已记；PLAN 已归档；分支已清；本里程碑全勾。
