@@ -1,8 +1,7 @@
-<p align="center">
-  <img src="assets/vibe-coding-handbook-logo.png" alt="Vibe Coding Handbook Logo" width="180">
-</p>
-
-<h1 align="center">Vibe Coding Handbook for Production Projects</h1>
+<h1 align="center">
+  <img src="assets/vibe-coding-handbook-logo.png" alt="Vibe Coding Handbook Logo" width="120" align="middle">
+  &nbsp;Vibe Coding Handbook for Production Projects
+</h1>
 
 <p align="center">
   A production-grade engineering playbook for Claude Code, Codex, and other coding agents.<br>
