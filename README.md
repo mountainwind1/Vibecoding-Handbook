@@ -1,8 +1,7 @@
-<p align="center">
-  <img src="assets/vibe-coding-handbook-logo.png" alt="Vibe Coding Handbook Logo" width="180">
-</p>
-
-<h1 align="center">Vibe Coding 正式项目工作手册</h1>
+<h1 align="center">
+  <img src="assets/vibe-coding-handbook-logo.png" alt="Vibe Coding Handbook Logo" width="120" align="middle">
+  &nbsp;Vibe Coding 正式项目工作手册
+</h1>
 
 <p align="center">
   面向 Claude Code、Codex 与其他编程 Agent 的正式项目工程方法。<br>
