@@ -1,4 +1,4 @@
-# AGENTS.md · 多 Agent 协作入口（模板 · 配套工作手册 v5.3）
+# AGENTS.md · 多 Agent 协作入口（模板 · 配套工作手册 v6）
 
 > Claude / Codex / 其他编程 Agent 进入项目时先读本文件，再读 ENGINEERING.md、PRD.md、PLAN.md。Claude Code 项目仍可保留 CLAUDE.md，但跨工具规则以本文件为准。
 
@@ -6,6 +6,8 @@
 
 - 产品真相：PRD.md
 - 当前任务真相：PLAN.md
+- 机器任务状态：.vibe/tasks/*.json
+- 项目协作状态：.vibe/project.json
 - 工程规则：ENGINEERING.md
 - 决策历史：DECISIONS.md
 - 视觉真相：DESIGN.md
@@ -28,6 +30,8 @@ Worktree：{路径或分支名}
 Writable Scope：{允许改的目录/文件}
 Evidence：{PR / commit / checks / screenshot / log}
 ```
+
+v6 项目中，PLAN.md 保留人读叙事；机器状态以 `.vibe/tasks/{task-id}.json` 为准。两者冲突时，先停下，由 Integration Owner 修正。
 
 认领规则：
 
@@ -75,6 +79,8 @@ Evidence：
 Known risks：
 Next step：
 ```
+
+v6 项目中，handoff packet 必须同时写入对应 task JSON 的 `handoff` 字段。
 
 ## Skills 迁移建议
 

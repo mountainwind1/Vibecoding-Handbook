@@ -1,7 +1,8 @@
-# PLAN.md · 任务接力棒（模板 · 配套工作手册 v5.3）
+# PLAN.md · 任务接力棒（模板 · 配套工作手册 v6）
 
 > 只装"还要做什么"。决策进 DECISIONS.md；已完成里程碑的任务清单可归档到 PLAN-ARCHIVE.md（保留其目标/原则/边界，只归任务）。
 > 改本文件只增量编辑，禁止整文件重生成；改完 git diff 核对 checkbox。
+> v6：PLAN.md 是人读任务叙事；机器可执行状态以 `.vibe/tasks/*.json` 为准。
 
 **当前里程碑：M{x}**
 已完成里程碑：{无 / M0–M{n}，任务见 PLAN-ARCHIVE.md}

@@ -1,0 +1,33 @@
+{
+  "schema": ".vibe/.schema/project.schema.json",
+  "vibe_version": "v6",
+  "project": "{project-name}",
+  "default_branch": "main",
+  "current_phase": "{phase-id}",
+  "current_milestone": "M{x}",
+  "topology": "hub-and-spoke",
+  "integration_owner": "integration",
+  "runtime_dir": ".vibe/runtime",
+  "protected_scopes": [
+    "migrations/**",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    ".github/workflows/**",
+    "packages/contracts/**",
+    "design-tokens/**"
+  ],
+  "default_checks": [
+    "lint",
+    "typecheck",
+    "build",
+    "test"
+  ],
+  "contracts": [
+    {
+      "id": "{contract-id}",
+      "owner": "integration",
+      "path": "{contract path}",
+      "state": "draft"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "schema": "../../.vibe/.schema/task.schema.json",
+  "id": "M3-T4",
+  "title": "支付 webhook 签名校验",
+  "milestone": "M3",
+  "phase": "payments-v2",
+  "state": "review",
+  "owner": "codex-api-1",
+  "role": "backend",
+  "priority": "high",
+  "worktree": "../wt/codex-api-1",
+  "writable_scope": [
+    "apps/api/src/payments/**",
+    "packages/contracts/src/payment.ts",
+    "tests/payments/**"
+  ],
+  "protected_scope": [
+    "packages/contracts/src/payment.ts"
+  ],
+  "depends_on": ["M3-T1"],
+  "contract_refs": ["payment-webhook"],
+  "checks": ["lint", "typecheck", "test:payments", "security:a5"],
+  "evidence": [
+    {"type": "commit", "ref": "abc123"},
+    {"type": "check", "ref": "test:payments:passed"},
+    {"type": "security", "ref": "A5:no-high-risk"}
+  ],
+  "handoff": {
+    "from": "codex-api-1",
+    "to": "integration",
+    "state": "review",
+    "summary": "实现 webhook 签名校验与幂等处理",
+    "changed_scope": ["apps/api/src/payments/**", "packages/contracts/src/payment.ts"],
+    "known_risks": ["尚未用真实 Stripe CLI replay"],
+    "next_step": "Integration Owner 跑端到端 replay"
+  },
+  "updated_at": "2026-08-02T00:00:00Z"
+}

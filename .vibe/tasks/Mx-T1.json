@@ -1,0 +1,27 @@
+{
+  "schema": "../.schema/task.schema.json",
+  "id": "M{x}-T1",
+  "title": "{任务名}",
+  "milestone": "M{x}",
+  "phase": "{phase-id}",
+  "state": "todo",
+  "owner": null,
+  "role": "{frontend/backend/fullstack/security/integration}",
+  "priority": "normal",
+  "worktree": null,
+  "writable_scope": [
+    "{allowed/path/**}"
+  ],
+  "protected_scope": [],
+  "depends_on": [],
+  "contract_refs": [],
+  "checks": [
+    "lint",
+    "typecheck",
+    "build",
+    "test"
+  ],
+  "evidence": [],
+  "handoff": null,
+  "updated_at": "{YYYY-MM-DDTHH:mm:ssZ}"
+}

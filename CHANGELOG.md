@@ -1,4 +1,4 @@
-# CHANGELOG.md · 版本日志（模板 · 配套工作手册 v5.3）
+# CHANGELOG.md · 版本日志（模板 · 配套工作手册 v6）
 
 > 只增不改，新条目加在顶部。PRD 是"当前真相"，历史变更全在这里。
 > 版本号 ↔ 里程碑映射：MVP 期每合并一个里程碑记一条 `0.{n}.0`（M0=0.1.0、M1=0.2.0…，由收口验收门任务追加）；
@@ -9,6 +9,17 @@
 
 ## [Unreleased]
 - {进行中、尚未发版的变更}
+
+## [v6] - 2026-08-02
+### 新增
+- Multi-Agent Native 状态层：`.vibe/project.json`、`.vibe/tasks/*.json`、checks、runtime、schema 草案。
+- 新增 `VIBE-CLI.md`，定义 claim/start/block/evidence/handoff/gate/integrate 等 deterministic CLI。
+- 新增 v6 主手册章节：project truth 与 agent runtime 分离、调度拓扑、contract owner/freeze、handoff packet、integration/merge gate。
+- 新增 `MIGRATION-v5.3-to-v6.md` 和 `examples/v6/` 示例。
+### 变更
+- `AGENTS.md` / `ENGINEERING.md` / `PLAN.md` 升级为 v6 表述，PLAN 保留人读叙事，机器状态迁移到 `.vibe/tasks`。
+### 兼容性
+- v5.3 的人读 claim/scope/evidence 仍可保留；v6 以 `.vibe/` 为机器真相。
 
 ## [v5.3] - 2026-08-02
 ### 新增

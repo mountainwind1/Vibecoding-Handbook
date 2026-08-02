@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Vibe v6 Task",
+  "type": "object",
+  "required": ["id", "title", "milestone", "state", "writable_scope", "checks", "evidence"],
+  "properties": {
+    "id": {"type": "string"},
+    "title": {"type": "string"},
+    "milestone": {"type": "string"},
+    "phase": {"type": "string"},
+    "state": {
+      "type": "string",
+      "enum": ["todo", "claimed", "in_progress", "blocked", "review", "integration", "integrated", "rejected"]
+    },
+    "owner": {"type": ["string", "null"]},
+    "role": {"type": "string"},
+    "priority": {"type": "string"},
+    "worktree": {"type": ["string", "null"]},
+    "writable_scope": {"type": "array", "items": {"type": "string"}},
+    "protected_scope": {"type": "array", "items": {"type": "string"}},
+    "depends_on": {"type": "array", "items": {"type": "string"}},
+    "contract_refs": {"type": "array", "items": {"type": "string"}},
+    "checks": {"type": "array", "items": {"type": "string"}},
+    "evidence": {"type": "array"},
+    "handoff": {"type": ["object", "null"]},
+    "updated_at": {"type": "string"}
+  }
+}

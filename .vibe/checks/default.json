@@ -1,0 +1,24 @@
+{
+  "checks": {
+    "lint": {
+      "command": "{lint}",
+      "required": true
+    },
+    "typecheck": {
+      "command": "{typecheck}",
+      "required": true
+    },
+    "build": {
+      "command": "{build}",
+      "required": true
+    },
+    "test": {
+      "command": "{test}",
+      "required": true
+    },
+    "security:a5": {
+      "command": "{security review command or manual evidence}",
+      "required_when": "sensitive_task"
+    }
+  }
+}

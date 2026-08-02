@@ -1,6 +1,6 @@
 # Vibe Coding 正式项目工作手册
 
-> 一套面向 Claude / Codex / 其他编程 Agent 的正式项目开发工作流（v5.3）：**垂直切片 + 任务分档 + 门禁收口 + Multi-Agent Ready**。
+> 一套面向 Claude / Codex / 其他编程 Agent 的正式项目开发工作流（v6）：**垂直切片 + 任务分档 + 门禁收口 + Multi-Agent Native**。
 > 目标：让"AI 写代码"的项目做出来是一个连贯的产品，而不是一堆正确的零件。
 
 ## 解决什么问题
@@ -14,7 +14,7 @@
 
 | 文件 | 作用 |
 |------|------|
-| [Vibe-Coding-正式项目工作手册v5.3.md](Vibe-Coding-正式项目工作手册v5.3.md) | 手册本体：v5.2 全流程 + Multi-Agent Ready 适配层（Ownership、Claim/State、Worktree、Scope、Integration Gate、Evidence Chain） |
+| [Vibe-Coding-正式项目工作手册v6.md](Vibe-Coding-正式项目工作手册v6.md) | 手册本体：v5.3 全流程 + Multi-Agent Native 机器状态层（`.vibe/tasks`、调度拓扑、deterministic checks、CLI 设计） |
 | [AGENTS.md](AGENTS.md) | 通用 Agent 入口：Claude / Codex / 其他 Agent 都先读；定义项目真相源、任务认领、可写范围、交接包 |
 | [CLAUDE.md](CLAUDE.md) | Claude Code 适配模板：保留 Claude 自动读入优势，但把跨工具规则上移到 AGENTS.md / ENGINEERING.md |
 | [ENGINEERING.md](ENGINEERING.md) | 工程规则模板：vendor-neutral 的命令、契约、CI、分支、集成门禁与证据链 |
@@ -26,7 +26,10 @@
 | [SELFCHECK.md](SELFCHECK.md) | 大模型自查手册（机读版）：新会话开场读入，自动判定阶段、体检门禁、输出诊断报告；内置防遗忘协议（段标回显 + 强制规则 ID 引用） |
 | [MIGRATION-v5.2-to-v5.3.md](MIGRATION-v5.2-to-v5.3.md) | v5.2 用户低成本升级指南 |
 | [VERSION-DIFF.md](VERSION-DIFF.md) | v5.2 / v5.3 / v6 设计差异和选型边界 |
+| [VIBE-CLI.md](VIBE-CLI.md) | v6 deterministic checks / task state / integration gate 的 CLI 设计草案 |
+| [MIGRATION-v5.3-to-v6.md](MIGRATION-v5.3-to-v6.md) | v5.3 项目升级到 v6 的迁移指南 |
 | `assets/` | 下面两张执行流程图 |
+| `.vibe/` | v6 机器可读项目状态、任务、检查定义与 runtime 草稿 |
 | `examples/` | 多 Agent 任务状态、Worktree、交接包、证据链示例 |
 
 ## 执行流程
@@ -41,7 +44,7 @@
 
 ## 快速开始（新项目五步）
 
-1. 把模板文件复制进你的新项目目录；单 Agent 项目至少保留 `AGENTS.md` / `ENGINEERING.md` / `PRD.md` / `PLAN.md` / `DECISIONS.md` / `CHANGELOG.md` / `DESIGN.md`。
+1. 把模板文件复制进你的新项目目录；v6 项目至少保留 `AGENTS.md` / `ENGINEERING.md` / `.vibe/` / `PRD.md` / `PLAN.md` / `DECISIONS.md` / `CHANGELOG.md` / `DESIGN.md`。
 2. 按手册**阶段 0** 生成项目规则：Claude 项目可继续用 `CLAUDE.md`，Codex 或混合工具项目统一先读 `AGENTS.md` + `ENGINEERING.md`；同时立机制层：危险命令 permissions、pre-commit 密钥扫描、CI 加 secret 扫描 + 依赖审计（属 M0 的 DoD）。
 3. **阶段 1 → 1.5 → 2** 依次产出 PRD / DESIGN / PLAN+DECISIONS，中间用**阶段 5** 换模型评审 PRD（输出评审报告、增量回填，不整文件重写）。
 4. 进入里程碑循环：每个会话按 PLAN 里任务的档位选 **3A 重型 / 3B 常规 / 3C 批量**模板执行，做完 commit + 勾选 + `/clear`。
@@ -54,7 +57,7 @@
 日常轻量版：每次开新会话或阶段性任务时，第一句 `读 SELFCHECK.md` ——AI 会自动判定当前阶段、逐条体检硬规则与门禁、给出补救处方和本会话计划；报告末尾必须回显全部段标（M0–M9）并给出规则引用数，缺回显 = 手册被截断或被忽略，要求它重读。
 
 ```
-读 Vibe-Coding-正式项目工作手册v5.3.md、AGENTS.md、ENGINEERING.md，把它们当作审计标准，对本项目的执行过程做合规审核。
+读 Vibe-Coding-正式项目工作手册v6.md、AGENTS.md、ENGINEERING.md 和 .vibe/，把它们当作审计标准，对本项目的执行过程做合规审核。
 只读不改。逐层检查并给出证据（文件:行 / commit hash / PR 链接）：
 1. 文档层：七个配套文件是否存在、是否各司其职（对照手册"文档分工"表）；PRD 是否保持
    当前真相、PLAN 是否只装未做任务、DECISIONS/CHANGELOG 是否只增不改、契约是否
@@ -73,4 +76,4 @@
 - 这套流程提高的是模型写代码的**下限**（错误更少），不是让 AI 无所不能；它的价值建立在"你能判断 AI 做得对不对"之上。
 - 自动化越强，越要给它回滚点（git commit）和停止点（改一轮就停下让你看），而不是放它无监督长跑。
 - 上下文是有限资源：一个会话只做一个任务（或一批可批量任务），靠文档 + git 接力，而不是靠会话记忆。
-- v5.3 面向"单人 + 多 Agent 会话/worktree"的渐进式协作；需要机器调度、多机长期并行、可执行任务状态时，使用 v6。
+- v6 面向多机、多 Agent 长期并行；小项目或单人单 Agent 可继续使用 v5.2 / v5.3。

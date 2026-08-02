@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Vibe v6 Project",
+  "type": "object",
+  "required": ["vibe_version", "project", "default_branch", "topology", "integration_owner"],
+  "properties": {
+    "vibe_version": {"type": "string"},
+    "project": {"type": "string"},
+    "default_branch": {"type": "string"},
+    "current_phase": {"type": "string"},
+    "current_milestone": {"type": "string"},
+    "topology": {"type": "string", "enum": ["solo", "hub-and-spoke", "pipeline"]},
+    "integration_owner": {"type": "string"},
+    "runtime_dir": {"type": "string"},
+    "protected_scopes": {"type": "array", "items": {"type": "string"}},
+    "default_checks": {"type": "array", "items": {"type": "string"}},
+    "contracts": {"type": "array"}
+  }
+}
