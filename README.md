@@ -1,79 +1,126 @@
-# Vibe Coding 正式项目工作手册
+<p align="center">
+  <img src="assets/vibe-coding-handbook-logo.png" alt="Vibe Coding Handbook Logo" width="180">
+</p>
 
-> 一套面向 Claude / Codex / 其他编程 Agent 的正式项目开发工作流（v6）：**垂直切片 + 任务分档 + 门禁收口 + Multi-Agent Native**。
-> 目标：让"AI 写代码"的项目做出来是一个连贯的产品，而不是一堆正确的零件。
+<h1 align="center">Vibe Coding 正式项目工作手册</h1>
 
-## 解决什么问题
+<p align="center">
+  面向 Claude Code、Codex 与其他编程 Agent 的正式项目工程方法。<br>
+  从单 Agent 长期开发，到多 Agent、多 Worktree、多机协作，都有清晰的项目真相、执行边界与交付门禁。
+</p>
 
-- **两张皮**：功能都做完了，产品却像 demo——页面之间断头、用户不知道下一步。根因是按"技术层"推进（先做完后端再做前端）。本手册把里程碑改为按"用户能完成的垂直切片"切，每个里程碑收口强制以新用户身份走一遍完整旅程，脱节在当下暴露，不会攒到最后爆发。
-- **上下文与成本失控**：一个会话吃下整个项目、所有任务全程最高规格思考。本手册用"文档接力棒"（七个文件各司其职，会话 `/clear` 后靠读文件恢复全部上下文）+ 任务三档分级（重型/常规/轻型各配专用执行模板和模型档位）控制。
-- **纪律靠嘴**：CI 红着合并、密钥进仓库、危险命令误执行——写在文档里的纪律会在长会话尾部失效。本手册把能机制化的规则全部机制化（permissions 硬拦截、pre-commit 密钥扫描、CI 安全步骤、评审走子代理），纪律只做兜底。
-- **安全无门禁**：涉敏里程碑（鉴权/支付/PII/文件上传/用户输入入库）收口强制安全审计，高危清零才能合并——安全和产品连贯性一样是强制门禁，不是"按需选用"。
+<p align="center">
+  <strong>简体中文</strong> · <a href="README.en.md">English</a>
+</p>
 
-## 仓库结构
+<p align="center">
+  <a href="https://github.com/mountainwind1/Vibecoding-Handbook/releases/latest"><img src="https://img.shields.io/github/v/release/mountainwind1/Vibecoding-Handbook?display_name=tag&sort=semver" alt="Latest release"></a>
+  <a href="https://github.com/mountainwind1/Vibecoding-Handbook/stargazers"><img src="https://img.shields.io/github/stars/mountainwind1/Vibecoding-Handbook?style=flat" alt="GitHub stars"></a>
+  <a href="https://github.com/mountainwind1/Vibecoding-Handbook/commits/main"><img src="https://img.shields.io/github/last-commit/mountainwind1/Vibecoding-Handbook" alt="Last commit"></a>
+</p>
+
+> 当前最新版：**v6 · Multi-Agent Native**。v5.2 与 v5.3 继续作为低复杂度稳定路径保留，不需要为了“追新”而强制升级。
+
+## 这是什么
+
+这不是一套让 AI “多写代码”的提示词，而是一套让 AI 参与正式软件交付的工程手册。它把需求、设计、计划、决策、任务状态、代码、证据与发布连接成一条可检查、可恢复、可交接的链路。
+
+它重点解决四类问题：
+
+| 常见问题 | 手册给出的机制 |
+|---|---|
+| 功能都完成了，产品旅程却是断的 | 按用户旅程切垂直里程碑，每个里程碑独立走查与验收 |
+| 长会话丢上下文，换 Agent 后重新猜项目 | 用 PRD、PLAN、DECISIONS、DESIGN 等文件保存项目真相 |
+| 多个 Agent 同时修改，互相覆盖或抢任务 | Ownership、Task Claim、Writable Scope、Worktree Isolation |
+| “测试过了”只有一句话，没有可复核证据 | Evidence Chain、Deterministic Checks、Integration / Merge Gate |
+
+## 选择适合你的版本
+
+| 版本 | 适用场景 | 状态模型 | 入口 |
+|---|---|---|---|
+| **v5.2 · Single-Agent Solid** | 单人 + 单个 Claude Code 会话，长期正式项目 | 人读文档 | [手册](Vibe-Coding-正式项目工作手册v5.2.md) · [发布版](https://github.com/mountainwind1/Vibecoding-Handbook/releases/tag/v5.2) |
+| **v5.3 · Multi-Agent Ready** | 多会话 / 多 Worktree，或 Claude + Codex 混合开发 | PLAN 中的人读任务状态 | [手册](Vibe-Coding-正式项目工作手册v5.3.md) · [发布版](https://github.com/mountainwind1/Vibecoding-Handbook/releases/tag/v5.3) |
+| **v6 · Multi-Agent Native** | 多 Agent、多机、长期并行与自动调度 | `.vibe/` 机器可读项目状态 | [最新手册](Vibe-Coding-正式项目工作手册v6.md) · [发布版](https://github.com/mountainwind1/Vibecoding-Handbook/releases/tag/v6) |
+
+完整差异见 [VERSION-DIFF.md](VERSION-DIFF.md)。
+
+## v6 的协作模型
+
+```mermaid
+flowchart LR
+    A["Project Truth<br/>PRD · PLAN · DECISIONS · .vibe"] --> B["Task Claim<br/>Owner · Scope · Worktree"]
+    B --> C1["Claude Code"]
+    B --> C2["Codex"]
+    B --> C3["Other Agents"]
+    C1 --> D["Handoff Packet<br/>Changes · Checks · Evidence"]
+    C2 --> D
+    C3 --> D
+    D --> E["Integration Gate<br/>Contract · CI · Journey"]
+    E --> F["Merge & Release"]
+```
+
+核心原则是：**Agent runtime 可以更换，project truth 必须留在仓库里。** Agent 可以拥有自己的临时记忆和工具配置，但任务状态、契约、交接包、检查结果与集成结论不能只存在于某个会话中。
+
+## 快速开始
+
+1. 根据上表选择版本。单人项目优先从 v5.2 开始；真实并行协作再选 v5.3 或 v6。
+2. 把对应模板复制到项目根目录。v6 至少保留 `AGENTS.md`、`ENGINEERING.md`、`.vibe/`、`PRD.md`、`PLAN.md`、`DECISIONS.md`、`CHANGELOG.md` 与 `DESIGN.md`。
+3. 先完成阶段 0 的规则和安全基线，再依次建立 PRD、设计系统、计划与决策日志。
+4. 每个任务明确 Owner、状态、Worktree、可写范围、完成定义和验证命令；一次会话只处理一个任务或一批同类任务。
+5. 每个里程碑必须通过用户旅程走查、确定性检查、CI 和集成门禁，之后再合并与记录版本。
+
+新会话可从这句开始：
+
+```text
+读取 AGENTS.md、ENGINEERING.md、PRD.md、PLAN.md、DECISIONS.md、SELFCHECK.md 和 .vibe/，
+确认当前项目真相、任务 Owner、可写范围与集成门禁；只认领一个未被占用的任务再开始工作。
+```
+
+## 仓库内容
+
+### 主手册与迁移
 
 | 文件 | 作用 |
-|------|------|
-| [Vibe-Coding-正式项目工作手册v6.md](Vibe-Coding-正式项目工作手册v6.md) | 手册本体：v5.3 全流程 + Multi-Agent Native 机器状态层（`.vibe/tasks`、调度拓扑、deterministic checks、CLI 设计） |
-| [AGENTS.md](AGENTS.md) | 通用 Agent 入口：Claude / Codex / 其他 Agent 都先读；定义项目真相源、任务认领、可写范围、交接包 |
-| [CLAUDE.md](CLAUDE.md) | Claude Code 适配模板：保留 Claude 自动读入优势，但把跨工具规则上移到 AGENTS.md / ENGINEERING.md |
-| [ENGINEERING.md](ENGINEERING.md) | 工程规则模板：vendor-neutral 的命令、契约、CI、分支、集成门禁与证据链 |
-| [PRD.md](PRD.md) | 活的需求规格模板：业务规则 + 数据契约指针 + 产品体验四件套 + 三轨验收 |
-| [PLAN.md](PLAN.md) | 任务接力棒模板：垂直切片里程碑 + 档位/执行模式标注 + 收口验收门 |
-| [DECISIONS.md](DECISIONS.md) | 决策日志模板：只增不改，普通决策 + 伏笔（延后/预留）两种格式 |
-| [CHANGELOG.md](CHANGELOG.md) | 版本日志模板：版本号 ↔ 里程碑映射（M0=0.1.0，上线=1.0.0） |
-| [DESIGN.md](DESIGN.md) | 设计系统模板：前端视觉的单一真相，禁止组件内硬编码颜色/间距/字号 |
-| [SELFCHECK.md](SELFCHECK.md) | 大模型自查手册（机读版）：新会话开场读入，自动判定阶段、体检门禁、输出诊断报告；内置防遗忘协议（段标回显 + 强制规则 ID 引用） |
-| [MIGRATION-v5.2-to-v5.3.md](MIGRATION-v5.2-to-v5.3.md) | v5.2 用户低成本升级指南 |
-| [VERSION-DIFF.md](VERSION-DIFF.md) | v5.2 / v5.3 / v6 设计差异和选型边界 |
-| [VIBE-CLI.md](VIBE-CLI.md) | v6 deterministic checks / task state / integration gate 的 CLI 设计草案 |
-| [MIGRATION-v5.3-to-v6.md](MIGRATION-v5.3-to-v6.md) | v5.3 项目升级到 v6 的迁移指南 |
-| `assets/` | 下面两张执行流程图 |
-| `.vibe/` | v6 机器可读项目状态、任务、检查定义与 runtime 草稿 |
-| `examples/` | 多 Agent 任务状态、Worktree、交接包、证据链示例 |
+|---|---|
+| [Vibe-Coding-正式项目工作手册v6.md](Vibe-Coding-正式项目工作手册v6.md) | v6 完整方法与执行模板 |
+| [VERSION-DIFF.md](VERSION-DIFF.md) | v5.2 / v5.3 / v6 的选型边界 |
+| [MIGRATION-v5.2-to-v5.3.md](MIGRATION-v5.2-to-v5.3.md) | 从单 Agent 稳定模式升级到 Multi-Agent Ready |
+| [MIGRATION-v5.3-to-v6.md](MIGRATION-v5.3-to-v6.md) | 从人读任务状态升级到机器可读状态 |
+| [VIBE-CLI.md](VIBE-CLI.md) | v6 任务状态、确定性检查与集成门禁的 CLI 设计 |
 
-## 执行流程
+### 项目真相模板
 
-**建设期（0→1）**：文档接力棒依次就绪后进入里程碑循环，两道门禁（旅程走查、CI 绿合并）卡在每次出循环的必经之路上。
+| 文件 | 作用 |
+|---|---|
+| [AGENTS.md](AGENTS.md) | 所有 Agent 的通用入口、Ownership、Claim、Scope 与 Handoff 规则 |
+| [ENGINEERING.md](ENGINEERING.md) | 与厂商无关的命令、契约、CI、分支和集成规则 |
+| [CLAUDE.md](CLAUDE.md) | Claude Code 适配层；跨工具规则仍以上述通用文件为准 |
+| [PRD.md](PRD.md) | 业务规则、用户旅程、契约指针与验收标准 |
+| [PLAN.md](PLAN.md) | 当前里程碑、任务边界与收口门禁 |
+| [DECISIONS.md](DECISIONS.md) | 只增不改的架构与产品决策日志 |
+| [DESIGN.md](DESIGN.md) | 前端设计系统的单一真相 |
+| [CHANGELOG.md](CHANGELOG.md) | 版本与里程碑交付记录 |
+| [SELFCHECK.md](SELFCHECK.md) | 面向大模型的机读自查与防遗忘协议 |
 
-![建设期主流程](assets/build-flow.svg)
+### Multi-Agent Native
 
-**上线后（阶段 4 迭代）**：所有改动先定性、再按改动半径分流——微调走最短路，大改动走"迷你 0→1"复用建设期全部机制，没有第二套规则。
+- `.vibe/project.json`：持久化项目状态与调度拓扑。
+- `.vibe/tasks/*.json`：机器可执行的任务、Owner、Scope、依赖、状态与证据。
+- `.vibe/checks/default.json`：确定性检查集合。
+- `.vibe/.schema/`：项目和任务状态的 JSON Schema。
+- `examples/`：任务认领、Worktree、交接包和证据链示例。
 
-![迭代流水线](assets/iteration-flow.svg)
+## 设计原则
 
-## 快速开始（新项目五步）
+- **项目真相属于仓库**：不依赖某个模型、会话或开发者的记忆。
+- **兼容优先**：v6 是可选增强层，不会让 v5.2 用户的稳定流程失效。
+- **人机双读**：Markdown 保持可讨论，`.vibe/` 让状态可校验、可调度。
+- **集成是一种角色**：实现 Agent 不能自行宣布合并完成，集成负责人负责跨任务验证。
+- **证据先于结论**：命令、输出、提交、PR 与旅程记录组成 Evidence Chain。
+- **自动化必须确定**：CLI 负责状态转换和门禁，不替代 PRD、设计与业务判断。
 
-1. 把模板文件复制进你的新项目目录；v6 项目至少保留 `AGENTS.md` / `ENGINEERING.md` / `.vibe/` / `PRD.md` / `PLAN.md` / `DECISIONS.md` / `CHANGELOG.md` / `DESIGN.md`。
-2. 按手册**阶段 0** 生成项目规则：Claude 项目可继续用 `CLAUDE.md`，Codex 或混合工具项目统一先读 `AGENTS.md` + `ENGINEERING.md`；同时立机制层：危险命令 permissions、pre-commit 密钥扫描、CI 加 secret 扫描 + 依赖审计（属 M0 的 DoD）。
-3. **阶段 1 → 1.5 → 2** 依次产出 PRD / DESIGN / PLAN+DECISIONS，中间用**阶段 5** 换模型评审 PRD（输出评审报告、增量回填，不整文件重写）。
-4. 进入里程碑循环：每个会话按 PLAN 里任务的档位选 **3A 重型 / 3B 常规 / 3C 批量**模板执行，做完 commit + 勾选 + `/clear`。
-5. 每个里程碑收口：旅程走查（断路必补）+（涉敏）A5 安全审计 + CI 绿 + PR 合并 + CHANGELOG 记 `0.{n}.0`。
+## 使用边界
 
-## 第二种用法：审核既有项目
+这套方法提高的是 AI 编程项目的交付下限，不是让 AI 无所不能。你仍然需要判断需求是否正确、体验是否连贯、风险是否可接受。自动化越强，越要保留可回滚的提交、明确的停止点和最终的人类责任。
 
-手册的每条规则都是留痕的门禁，所以它同时是一份审计标准。按五层证据链查：**文档一致性 → git 纪律 → 门禁留痕 → 机制配置 → 产品实走**。前四层可以让 AI 跑（新会话粘贴下面的提示词），第五层必须人以新用户身份走一遍旅程。
-
-日常轻量版：每次开新会话或阶段性任务时，第一句 `读 SELFCHECK.md` ——AI 会自动判定当前阶段、逐条体检硬规则与门禁、给出补救处方和本会话计划；报告末尾必须回显全部段标（M0–M9）并给出规则引用数，缺回显 = 手册被截断或被忽略，要求它重读。
-
-```
-读 Vibe-Coding-正式项目工作手册v6.md、AGENTS.md、ENGINEERING.md 和 .vibe/，把它们当作审计标准，对本项目的执行过程做合规审核。
-只读不改。逐层检查并给出证据（文件:行 / commit hash / PR 链接）：
-1. 文档层：七个配套文件是否存在、是否各司其职（对照手册"文档分工"表）；PRD 是否保持
-   当前真相、PLAN 是否只装未做任务、DECISIONS/CHANGELOG 是否只增不改、契约是否
-   单一真相在 shared 包。
-2. git 层：是否一任务一 commit、有无直推 main、上一里程碑全部 commit 是否已进 main、
-   有无 CI 红着合并的 PR。
-3. 门禁层：每个已收口里程碑是否有旅程走查记录、CHANGELOG 版本条目、CI 绿证据；
-   涉敏里程碑是否有 A5 审计留痕。
-4. 机制层：permissions / pre-commit / CI 安全步骤是否实际配置，还是只停留在文档纪律。
-输出：按 违规（必须整改）> 缺失留痕（补记）> 建议 三级排序的审核报告，
-每条注明违反手册哪一节。不要为了报告好看而遗漏问题。
-```
-
-## 边界与原则
-
-- 这套流程提高的是模型写代码的**下限**（错误更少），不是让 AI 无所不能；它的价值建立在"你能判断 AI 做得对不对"之上。
-- 自动化越强，越要给它回滚点（git commit）和停止点（改一轮就停下让你看），而不是放它无监督长跑。
-- 上下文是有限资源：一个会话只做一个任务（或一批可批量任务），靠文档 + git 接力，而不是靠会话记忆。
-- v6 面向多机、多 Agent 长期并行；小项目或单人单 Agent 可继续使用 v5.2 / v5.3。
+欢迎通过 [Issues](https://github.com/mountainwind1/Vibecoding-Handbook/issues) 提交实战反馈，通过 [Releases](https://github.com/mountainwind1/Vibecoding-Handbook/releases) 下载各稳定版本。
