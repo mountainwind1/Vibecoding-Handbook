@@ -102,6 +102,14 @@ Claim exactly one unowned task before starting work.
 | [CHANGELOG.md](CHANGELOG.md) | Release and milestone delivery history |
 | [SELFCHECK.md](SELFCHECK.md) | Machine-readable self-audit and anti-forgetting protocol for agents |
 
+### Standard Skill
+
+| Skill | Purpose |
+|---|---|
+| [skills/kof](skills/kof/SKILL.md) | Standard kick-off flow: resume / reload / explicit-task modes, plus the per-task loop, closeout gates, and hand-off heuristics |
+
+Install: copy to `.claude/skills/kof/SKILL.md` in your project, replace the `{placeholders}` with your project's real values, and keep appending the traps you hit to the "project traps" section. Usage: `/kof` (resume), `/kof c` (reload after /clear), `/kof M3-T2` (explicit task).
+
 ### Multi-Agent Native
 
 - `.vibe/project.json`: persistent project state and scheduling topology.
