@@ -18,7 +18,7 @@
   <a href="https://github.com/mountainwind1/Vibecoding-Handbook/commits/main"><img src="https://img.shields.io/github/last-commit/mountainwind1/Vibecoding-Handbook" alt="Last commit"></a>
 </p>
 
-> Current release: **v6 · Multi-Agent Native**. v5.2 and v5.3 remain supported as lower-complexity paths; upgrading is optional.
+> Current release: **v6.1 · Multi-Agent Native + field-retrospective addendum** (published as an addendum inside the v6 handbook). v5.2 and v5.3 remain supported as lower-complexity paths; upgrading is optional. v6.1 also formalizes "v6 templates + a declared v5.3 mode" as a legitimate downgrade path, fully validated by a real 25-milestone project — see the retrospective in [examples/case-tidepoint.md](examples/case-tidepoint.md).
 
 ## What this is
 
@@ -101,6 +101,8 @@ Claim exactly one unowned task before starting work.
 | [DESIGN.md](DESIGN.md) | Single source of truth for the frontend design system |
 | [CHANGELOG.md](CHANGELOG.md) | Release and milestone delivery history |
 | [SELFCHECK.md](SELFCHECK.md) | Machine-readable self-audit and anti-forgetting protocol for agents |
+| [DEPLOY.md](DEPLOY.md) | Deployment playbook: the checklist of defenses that fail silently when misconfigured, plus rollback-drill discipline |
+| [OPERATIONS.md](OPERATIONS.md) | Operations notes: runtime behavior you cannot see from the UI |
 
 ### Standard Skill
 
