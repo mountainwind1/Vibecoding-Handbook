@@ -18,7 +18,7 @@
   <a href="https://github.com/mountainwind1/Vibecoding-Handbook/commits/main"><img src="https://img.shields.io/github/last-commit/mountainwind1/Vibecoding-Handbook" alt="Last commit"></a>
 </p>
 
-> 当前最新版：**v6 · Multi-Agent Native**。v5.2 与 v5.3 继续作为低复杂度稳定路径保留，不需要为了“追新”而强制升级。
+> 当前最新版：**v6.1 · Multi-Agent Native + 实战复盘增补**（在 v6 手册内以增补形式发布）。v5.2 与 v5.3 继续作为低复杂度稳定路径保留，不需要为了“追新”而强制升级——v6.1 并把「v6 模板 + v5.3 模式声明」正式化为合法降级路径（已被一个 25 里程碑真实项目完整验证，复盘见 [examples/case-tidepoint.md](examples/case-tidepoint.md)）。
 
 ## 这是什么
 
@@ -100,6 +100,8 @@ flowchart LR
 | [DESIGN.md](DESIGN.md) | 前端设计系统的单一真相 |
 | [CHANGELOG.md](CHANGELOG.md) | 版本与里程碑交付记录 |
 | [SELFCHECK.md](SELFCHECK.md) | 面向大模型的机读自查与防遗忘协议 |
+| [DEPLOY.md](DEPLOY.md) | 部署手册：「配错时不报错」的防线清单与回滚演练 |
+| [OPERATIONS.md](OPERATIONS.md) | 运维备忘：运行期「界面上看不出来」的行为 |
 
 ### 标准 Skill
 

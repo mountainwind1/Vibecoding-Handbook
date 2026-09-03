@@ -21,6 +21,7 @@
 3. **合并前必须确认 CI 全绿**：All checks passed 才能合并，红绝不合并。有 `gh` CLI 时，AI 在建议"可以合并"之前必须先 `gh pr checks` 贴出 CI 状态；红就先修、不建议合并。
 4. **契约先行**：跨层接口（HTTP/WS/函数签名）先在 {shared 包/契约文件} 用 {zod/schema} 定稿 → 推导类型，两端各自校验；禁止在应用内重定义契约。
 5. **禁止硬编码面向用户的文案**：一律走 i18n key（{zh/en} 双份）。
+   > 按产品形态实例化：**明确的单语言产品可经用户拍板 + DECISIONS 留痕后整条挂起**（连 i18n 基础设施也不做）；挂起后禁止"顺手"零敲碎打上 key——半套 i18n 比没有更糟。硬规则要么生效、要么显式改掉，不能半死不活（被长期默默违反的硬规则会瓦解其他硬规则的权威）。
 6. **数据库迁移不裸写 SQL**：一律经 {Prisma/迁移工具} 生成迁移，不删改既有迁移历史。
 7. **危险命令先确认**：`rm -rf`、`DROP TABLE`、`git push --force`、`git reset --hard` 等破坏性命令，执行前必须停下向我确认（常规 `node_modules`/`dist` 清理除外）。
 8. **不随意加新依赖**：引入任何新依赖前说明理由并等我确认。
@@ -50,8 +51,14 @@
 ## 易错点（踩过的坑，持续追加）
 
 - **切新里程碑分支前**：`git log origin/main` 确认上一里程碑**全部** commit 已进 main——不是看到一次 Merge 就以为完整；里程碑首次合并后追加的 commit 必须再开 PR 合并。同时 `gh run list --branch main` 确认 main 自身 CI 为 success。
-- **四命令全绿 ≠ 布局对**：测试/lint/typecheck 抓不到裁切、横向溢出、错位。凡渲染/改动了界面的任务，commit 前在 preview 跑布局断言：`scrollWidth - clientWidth === 0`、最右元素不超容器右缘、375px 视口重跑；取内容最宽的一行重点验。
+- **四命令全绿 ≠ 布局对**：测试/lint/typecheck 抓不到裁切、横向溢出、错位。凡渲染/改动了界面的任务，commit 前在 preview 跑布局断言，**两条必须一起跑，缺一条就是假绿**：
+  - `scrollWidth - clientWidth === 0` —— **它在祖先有 `overflow:hidden` 时恒为 0**，而那正是"元素被裁掉但页面不滚"的形态：它测不出自己；
+  - 最右元素 `getBoundingClientRect().right` ≤ 容器右缘 —— 这条才是真的。
+  在**项目声明的基准视口**重跑（移动优先 375px / 桌面优先按最小支持宽度，替换须记 DECISIONS）；**登录成真实角色、带最宽真实数据量**——按角色渲染的 UI 没登录时量到的是另一个界面。
 - **本地绿 ≠ CI 绿**：本地 dist/.env 残留会掩盖问题。改了构建/依赖/生成步骤时，先本地模拟 CI（清 dist/缓存 + 无 .env，按 CI 步骤顺序跑）验证，再推。
+- **命令接管道会吞退出码**：`{lint 命令} 2>&1 | tail` 让 `&&` 链看到 tail 的 0，lint 红着也能提交推送。要么不接管道，要么 `set -o pipefail`。
+- **`gh run rerun` 复用原 run 的 workflow 快照**：修了 ci.yml 之后 rerun 旧 run 等于原地踩同一个坑——必须触发新 run（`gh pr update-branch` / 空提交）。
+- **CI job 秒级失败（<60s）先想磁盘/runner/基础设施，别急着当代码问题重跑**：这类报错常在 check-run 注解里而不在步骤日志（`gh api .../check-runs/{job_id}/annotations`）。
 - **接口隔离变化**：会被替换实现的能力（占位 → 真实现），签名按**未来实现的形态**定（DB/网络 → 异步 Promise），换实现时只改内部、上层零改动。
 - **延后/预留决策必须留痕**：当场记 DECISIONS（延后什么、归属哪个里程碑、当前怎么占位、为什么），相关文档处加"见 D××"交叉引用。
 - **上层目录的 CLAUDE.md 会被一并加载**：Claude Code 向上递归读取父目录的 CLAUDE.md，父目录遗留的旧宪法/模板会污染并顶撞本文件。开项目前检查仓库之上的目录，删掉或对齐过期的 CLAUDE.md。
