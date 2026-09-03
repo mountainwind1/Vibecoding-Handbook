@@ -101,6 +101,14 @@ flowchart LR
 | [CHANGELOG.md](CHANGELOG.md) | 版本与里程碑交付记录 |
 | [SELFCHECK.md](SELFCHECK.md) | 面向大模型的机读自查与防遗忘协议 |
 
+### 标准 Skill
+
+| Skill | 作用 |
+|---|---|
+| [skills/kof](skills/kof/SKILL.md) | 标准开工流程（kick-off）：续接 / 重载 / 指定任务三模式，含逐任务循环、收尾门禁与交接判据 |
+
+安装：复制到项目的 `.claude/skills/kof/SKILL.md`，把 `{占位}` 换成本项目实际值，并持续把踩过的坑追加进「项目坑位」一节。用法：`/kof`（续接）、`/kof c`（/clear 后重载）、`/kof M3-T2`（指定任务）。
+
 ### Multi-Agent Native
 
 - `.vibe/project.json`：持久化项目状态与调度拓扑。
