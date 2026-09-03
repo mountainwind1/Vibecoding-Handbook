@@ -2,6 +2,12 @@
 
 > Claude / Codex / 其他编程 Agent 进入项目时先读本文件，再读 ENGINEERING.md、PRD.md、PLAN.md。Claude Code 项目仍可保留 CLAUDE.md，但跨工具规则以本文件为准。
 
+## 运行模式声明（先于一切规则）
+
+{示例：本项目运行在 Handbook v5.3 模式（见 DECISIONS D1）：不使用 `.vibe/`，SELFCHECK 中 R2.10 及 `.vibe` 相关断言不适用；布局断言基准视口为 1280px 桌面优先（见 D6）；i18n 条款已挂起（见 D××）。}
+
+> 项目可以合法降级运行（v6 模板 + v5.3 模式）——实证：真实项目以此模式跑完 25 个里程碑。降级必须在此**显式声明并注明决策号**，让 SELFCHECK 与所有 Agent 有据可依：显式声明比每个会话口头解释便宜，也比默默不遵守诚实。未声明的豁免一律视为违规。
+
 ## 项目真相源
 
 - 产品真相：PRD.md
@@ -12,12 +18,16 @@
 - 决策历史：DECISIONS.md
 - 视觉真相：DESIGN.md
 - 版本历史：CHANGELOG.md
+- 会话自查协议：SELFCHECK.md（配合上方模式声明的不适用注记）
+- 部署真相：DEPLOY.md（有生产环境后）
+- 运维真相：OPERATIONS.md（有生产环境后）
 
 ## Agent Ownership
 
 - Product Owner：{人类 owner，负责拍板 PRD / 范围 / 取舍}
 - Integration Owner：{人类或指定 Agent，只负责集成、冲突、门禁，不承接普通功能任务}
 - Task Owner：每个任务只能有一个当前 owner；多人或多 Agent 并行时，必须先 claim 再动手。
+- 单人项目三者可兼任，但检查时分开问：我现在是在实现，还是在集成？
 
 ## Task Claim / State
 
@@ -45,7 +55,7 @@ v6 项目中，PLAN.md 保留人读叙事；机器状态以 `.vibe/tasks/{task-i
 - 每个并行 Agent 使用独立分支或 worktree。
 - 分支命名：`agent/{agent-id}/{task-id}-{slug}`。
 - 禁止两个 Agent 同时写同一文件，除非 Integration Owner 安排顺序合并。
-- 共享契约文件、schema、迁移、锁文件、设计 token 属高冲突区，默认只能由一个 owner 修改。
+- 共享契约文件、schema、迁移、锁文件、设计 token、**生成文件（types.gen 类，只能经生成命令再生）**、**CI 配置**属高冲突区，默认只能由一个 owner 修改。
 
 ## Integration Role / Gate
 
