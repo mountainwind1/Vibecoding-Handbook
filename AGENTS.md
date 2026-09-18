@@ -1,6 +1,7 @@
 # AGENTS.md · 多 Agent 协作入口（模板 · 配套工作手册 v6）
 
 > Claude / Codex / 其他编程 Agent 进入项目时先读本文件，再读 ENGINEERING.md、PRD.md、PLAN.md。Claude Code 项目仍可保留 CLAUDE.md，但跨工具规则以本文件为准。
+> 加载方式：Codex 自动加载本文件（从仓库根到当前目录逐级拼接，**合计默认上限 32 KiB**，超出部分读不到——本文件保持精简，细节下沉 ENGINEERING.md）；Claude Code 只自动读 CLAUDE.md，由其中的 `@AGENTS.md` import 带入。
 
 ## 运行模式声明（先于一切规则）
 
@@ -96,4 +97,4 @@ v6 项目中，handoff packet 必须同时写入对应 task JSON 的 `handoff` �
 
 - 高频角色提示词先沉淀为 `docs/skills/{skill-name}.md` 或工具原生 skill/command。
 - Skill 只放稳定流程，不放项目临时状态；临时状态仍写 PLAN / DECISIONS。
-- Claude 专用命令可保留在 `.claude/commands/`；跨 Claude/Codex 共用的规则必须同步到 AGENTS.md / ENGINEERING.md。
+- Skill 是跨工具格式（目录 + `SKILL.md`）：Claude Code 装在 `.claude/skills/`，Codex 装在 `.agents/skills/`；源文件只维护一份，禁止各改各的。跨工具共用的**规则**仍写在 AGENTS.md / ENGINEERING.md，skill 只放流程。

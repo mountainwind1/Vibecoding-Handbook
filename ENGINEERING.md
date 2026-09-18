@@ -72,6 +72,6 @@ v6 项目必须额外满足：
 
 ## Vendor-neutral Adapter
 
-- Claude Code：`CLAUDE.md` 可以保留工具特定注意事项，但不能成为唯一项目真相。
-- Codex：进入项目先读 `AGENTS.md` + `ENGINEERING.md` + 当前 PLAN 任务。
+- Claude Code：`CLAUDE.md` 可以保留工具特定注意事项，但不能成为唯一项目真相；共同规则用 `@AGENTS.md`、`@ENGINEERING.md` import 加载，不靠"请先读"。
+- Codex：自动加载 `AGENTS.md`（合计默认上限 32 KiB，保持精简）；本文件与当前 PLAN 任务由 AGENTS.md 指到、按需读取。
 - 其他 Agent：若不支持自动读文件，启动提示词必须显式要求读取上述文件。
