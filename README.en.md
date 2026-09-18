@@ -65,7 +65,7 @@ The central rule is simple: **agent runtime may change; project truth must remai
 1. Choose a version from the table above. Start with v5.2 for a single-developer project; adopt v5.3 or v6 when parallel work becomes real.
 2. Copy the matching templates into your project root. A v6 project should keep at least `AGENTS.md`, `ENGINEERING.md`, `.vibe/`, `PRD.md`, `PLAN.md`, `DECISIONS.md`, `CHANGELOG.md`, and `DESIGN.md`.
 3. Establish project rules and the security baseline in Phase 0, then create the PRD, design system, plan, and decision log.
-4. Give every task an Owner, state, worktree, writable scope, definition of done, and verification command. One task = one commit; a session keeps running until the next gate (critical task / milestone closeout / a `待拍板：` decision marker) and prints a progress block after every task.
+4. Give every task an Owner, state, worktree, writable scope, definition of done, and verification command. One task = one commit, with a progress block printed after every task. To run tasks back-to-back use the `/kof a` auto-loop: it stops only on its stop conditions (queue done, CI red, a decision is needed, critical task, milestone closeout) and never merges a PR by itself.
 5. Before merging, pass the user-journey review, deterministic checks, CI, and the integration gate. Record the resulting milestone and release.
 
 Use this as the opening instruction in a new session:
@@ -108,12 +108,12 @@ Claim exactly one unowned task before starting work.
 
 | Skill | Purpose |
 |---|---|
-| [skills/kof](skills/kof/SKILL.md) | Standard kick-off flow: resume / reload / explicit-task modes; runs continuously until the next gate and prints a progress block after every task |
+| [skills/kof](skills/kof/SKILL.md) | Standard kick-off flow: resume / reload / explicit-task / auto-loop (`/kof a`) modes; prints a progress block after every task; includes the "consult another model" protocol |
 | [skills/prog](skills/prog/SKILL.md) | Read-only progress block: milestone n/m, whether the next task needs human verification, pending `待拍板` / `偏差` items, git and CI health — computed by a script from PLAN + git + gh; `prog.sh` also runs without any AI |
 | [skills/close](skills/close/SKILL.md) | Milestone closeout gate: steps 0–7, each producing evidence (re-run historical assertions, journey walkthrough, independent A5 audit, archiving, PR/CI, post-merge checks) |
 | [agents/security-auditor](agents/security-auditor.md) | Subagent definition for the A5 security audit: isolated context, four high-risk patterns, three-part report, re-verification of the full attack chain |
 
-Install: copy the directories under `skills/` **as-is** into your project's `.claude/skills/` (Codex: `.agents/skills/`), and `agents/security-auditor.md` into `.claude/agents/`. Skills hold no project state — root commands and business red lines live in the project's `ENGINEERING.md`; critical-task list, sensitive areas, local environment and traps live in the project's `CLAUDE.md` — so upgrading is a straight overwrite. Usage: `/kof` (resume), `/kof c` (reload after /clear), `/kof M3-T2` (explicit task), `/prog` (progress), `/close` (closeout).
+Install: copy the directories under `skills/` **as-is** into your project's `.claude/skills/` (Codex: `.agents/skills/`), and `agents/security-auditor.md` into `.claude/agents/`. Skills hold no project state — root commands and business red lines live in the project's `ENGINEERING.md`; critical-task list, sensitive areas, local environment and traps live in the project's `CLAUDE.md` — so upgrading is a straight overwrite. Usage: `/kof` (resume), `/kof c` (reload after /clear), `/kof M3-T2` (explicit task), `/kof a` (auto-loop), `/prog` (progress), `/close` (closeout).
 
 ### Multi-Agent Native
 
