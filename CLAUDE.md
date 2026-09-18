@@ -5,11 +5,15 @@
 
 ## 启动顺序
 
-1. 先读 AGENTS.md。
-2. 再读 ENGINEERING.md。
-3. 再读 `.vibe/project.json` 和当前 `.vibe/tasks/{task-id}.json`。
-4. 再读 PRD.md / PLAN.md / DECISIONS.md / DESIGN.md 中与当前任务相关的部分。
-5. 本文件中的规则只作为 Claude Code 适配层；若与 AGENTS.md 或 `.vibe/` 冲突，以 `.vibe/` 的机器状态为准并停下报告。
+共同规则用 import 机械加载（Claude Code 只自动读本文件；写"请先读"是纪律，import 才是机制）：
+
+@AGENTS.md
+@ENGINEERING.md
+
+1. AGENTS.md 与 ENGINEERING.md 已随上面的 import 载入，不必再读。
+2. 再读 `.vibe/project.json` 和当前 `.vibe/tasks/{task-id}.json`。
+3. 再读 PRD.md / PLAN.md / DECISIONS.md / DESIGN.md 中与当前任务相关的部分。
+4. 本文件中的规则只作为 Claude Code 适配层；若与 AGENTS.md 或 `.vibe/` 冲突，以 `.vibe/` 的机器状态为准并停下报告。
 
 ## 项目一句话
 {这个项目是什么、为谁、解决什么}（详见 PRD.md）

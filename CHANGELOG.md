@@ -9,6 +9,12 @@
 
 ## [Unreleased]
 - {进行中、尚未发版的变更}
+### 变更（v6.2 批次 0 · 对照 2026-09 的 Claude Code / Codex 修正过时事实）
+- 提示词末尾的 `ultrathink` 全部移除（该关键词在 Claude Code 已失效）；正文改用工具中立的"高 / 默认 / 低推理档位"。
+- 分档表不再写死 Opus / Sonnet / Haiku：正文只写"旗舰 / 主力 / 轻量"，新增「模型档映射表」与「工具适配表」（Claude Code ↔ Codex CLI），模型换代只改这一处。
+- 规则文件加载机制化：CLAUDE.md 模板用 `@AGENTS.md`、`@ENGINEERING.md` import 取代"请先读"；写明 Codex 自动加载 AGENTS.md 且合计默认上限 32 KiB（AGENTS.md 须保持精简）。
+- `.claude/commands/` 统一改为 skill（跨工具格式：Claude Code `.claude/skills/`、Codex `.agents/skills/`）；内置评审命令更新为 `/code-review`、`/security-review`（Claude Code）与 `/review`（Codex）。
+- 速查页"8 条护栏"更正为 12 条。
 
 ## [v6.1] - 2026-09-03
 ### 新增（TidePoint 实战复盘回填：25 个里程碑 / 93 条决策 / 186 个 PR / 8 轮 A5）
