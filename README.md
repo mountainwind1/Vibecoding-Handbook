@@ -65,7 +65,7 @@ flowchart LR
 1. 根据上表选择版本。单人项目优先从 v5.2 开始；真实并行协作再选 v5.3 或 v6。
 2. 把对应模板复制到项目根目录。v6 至少保留 `AGENTS.md`、`ENGINEERING.md`、`.vibe/`、`PRD.md`、`PLAN.md`、`DECISIONS.md`、`CHANGELOG.md` 与 `DESIGN.md`。
 3. 先完成阶段 0 的规则和安全基线，再依次建立 PRD、设计系统、计划与决策日志。
-4. 每个任务明确 Owner、状态、Worktree、可写范围、完成定义和验证命令；一次会话只处理一个任务或一批同类任务。
+4. 每个任务明确 Owner、状态、Worktree、可写范围、完成定义和验证命令；一任务一 commit，每个任务收尾输出进度块；想连做用 `/kof a` 自动循环，它命中停止条件（队列做完、CI 红、需要拍板、命门、收口）才停，且永不自动合并 PR。
 5. 每个里程碑必须通过用户旅程走查、确定性检查、CI 和集成门禁，之后再合并与记录版本。
 
 新会话可从这句开始：
@@ -107,9 +107,12 @@ flowchart LR
 
 | Skill | 作用 |
 |---|---|
-| [skills/kof](skills/kof/SKILL.md) | 标准开工流程（kick-off）：续接 / 重载 / 指定任务三模式，含逐任务循环、收尾门禁与交接判据 |
+| [skills/kof](skills/kof/SKILL.md) | 标准开工流程（kick-off）：续接 / 重载 / 指定任务 / 自动循环（`/kof a`）四模式；每任务收尾输出进度块；含"找另一个模型讨论"规程 |
+| [skills/prog](skills/prog/SKILL.md) | 只读项目进度块：里程碑 n/m、下一个任务要不要人核验、积压的「待拍板 / 偏差」、git 与 CI 健康——由脚本从 PLAN + git + gh 现算，也可不经 AI 直接跑 `prog.sh` |
+| [skills/close](skills/close/SKILL.md) | 里程碑收口验收门：0–7 步逐步出证据（历史断言重跑、旅程走查、独立 A5、归档、PR/CI、合并后核对） |
+| [agents/security-auditor](agents/security-auditor.md) | A5 安全审计的子代理定义：上下文隔离、四类高危模式、三段式报告、原手法复验整条攻击链 |
 
-安装：复制到项目的 `.claude/skills/kof/SKILL.md`，把 `{占位}` 换成本项目实际值，并持续把踩过的坑追加进「项目坑位」一节。用法：`/kof`（续接）、`/kof c`（/clear 后重载）、`/kof M3-T2`（指定任务）。
+安装：把 `skills/` 下的目录**原样**复制到项目的 `.claude/skills/`（Codex：`.agents/skills/`），`agents/security-auditor.md` 复制到 `.claude/agents/`。skill 里不放项目状态——根命令与业务红线写在项目的 `ENGINEERING.md`，命门 / 涉敏点 / 本机环境 / 踩过的坑写在项目的 `CLAUDE.md`，所以手册升级时直接覆盖即可。用法：`/kof`（续接）、`/kof c`（/clear 后重载）、`/kof M3-T2`（指定任务）、`/kof a`（自动循环）、`/prog`（看进度）、`/close`（收口）。
 
 ### Multi-Agent Native
 

@@ -15,6 +15,18 @@
 - 规则文件加载机制化：CLAUDE.md 模板用 `@AGENTS.md`、`@ENGINEERING.md` import 取代"请先读"；写明 Codex 自动加载 AGENTS.md 且合计默认上限 32 KiB（AGENTS.md 须保持精简）。
 - `.claude/commands/` 统一改为 skill（跨工具格式：Claude Code `.claude/skills/`、Codex `.agents/skills/`）；内置评审命令更新为 `/code-review`、`/security-review`（Claude Code）与 `/review`（Codex）。
 - 速查页"8 条护栏"更正为 12 条。
+### 新增（v6.2 批次 1 · 多项目实跑反馈：进度黑箱 / 不停点"下一步"）
+- `skills/prog`：只读项目进度块——里程碑 n/m、下一个任务是否命门、积压的「待拍板 / 偏差」、git 与 CI 健康；`prog.sh` 由 PLAN + git + gh 现算（不新增状态文件、不经模型转述），带 `--selftest`，可不经 AI 直接跑。
+- `skills/close`：里程碑收口验收门，0–7 步逐步出证据（待拍板清零与偏差裁决 → 四命令 → 重跑历史断言 → 旅程走查 + 能力可达性 → 独立 A5 → 文档同步与归档 → PR/CI 后停下 → 合并后核对）。
+- `agents/security-auditor.md`：A5 的子代理定义，"禁止自审"从纪律变机制。
+- `kof` 模式四 `/kof a` 自动循环 + 停止条件表 + loop 内 PR 流程，以及"遇到需要方案的问题 → 找另一个模型讨论"规程——**回填自 TideAnywhere 的实战版 kof**（M1 用到 M11）。
+- 手册阶段 3 新增 3D「自动循环与进度块」；Evidence 标记约定 `待拍板：`（停）/ `偏差：`（不停，收口裁决）。
+- skill 统一采用"流程 + 借口→反驳（取自实证）+ 危险信号 + 验证"骨架。
+### 变更（v6.2 批次 1）
+- **人工检查点上移**：`/kof a` 显式开启自动循环，命中停止条件才停（不开时节奏照旧）；任务颗粒度从"约 30 分钟"改为"一个可独立回滚的 commit"；`/clear` 不再是任务间必经步骤；4.4 由"每项确认 diff"改为"逐项 commit、遇偏离才停"。不变：一任务一 commit、命门的人工确认门、禁止靠删/跳/弱化测试让检查变绿。
+- `kof`：移除全部项目占位与「项目坑位」（违反手册自己的"skill 不放项目状态"）——根命令与红线读 ENGINEERING.md，命门 / 涉敏点 / 本机环境 / 悬案 / 易错点读 CLAUDE.md；可原样安装、随手册升级覆盖。
+- CLAUDE.md 模板：TIER1 各条补"为什么"；TIER2 同步新节奏；新增「本机环境与常设悬案」节。
+- SELFCHECK：由"每个会话开场强制自查"改为按需执行（接手/审计、收口前、用户点名）；R2.1 / R3.3 / P3.G1 / P3.5.G1 / M7 同步。
 
 ## [v6.1] - 2026-09-03
 ### 新增（TidePoint 实战复盘回填：25 个里程碑 / 93 条决策 / 186 个 PR / 8 轮 A5）
