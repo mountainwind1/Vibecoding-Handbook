@@ -108,7 +108,7 @@ flowchart LR
 | Skill | 作用 |
 |---|---|
 | [skills/kof](skills/kof/SKILL.md) | 标准开工流程（kick-off）：续接 / 重载 / 指定任务 / 自动循环（`/kof a`）四模式；每任务收尾输出进度块；含"找另一个模型讨论"规程 |
-| [skills/prog](skills/prog/SKILL.md) | 只读项目进度块：里程碑 n/m、下一个任务要不要人核验、积压的「待拍板 / 偏差」、git 与 CI 健康——由脚本从 PLAN + git + gh 现算，也可不经 AI 直接跑 `prog.sh` |
+| [skills/prog](skills/prog/SKILL.md) | 只读项目进度块，默认只有三段：**进度**（项目总体 + 当前里程碑 n/m）/ **下一步**（要不要人到场）/ **待处理**（「待拍板 / 偏差」）；`--full` 追加距收口、其他在途、挂账、git 与 CI 健康——由脚本从 PLAN + git + gh 现算，也可不经 AI 直接跑 `prog.sh` |
 | [skills/close](skills/close/SKILL.md) | 里程碑收口验收门：0–7 步逐步出证据（历史断言重跑、旅程走查、独立 A5、归档、PR/CI、合并后核对） |
 | [agents/security-auditor](agents/security-auditor.md) | A5 安全审计的子代理定义：上下文隔离、四类高危模式、三段式报告、原手法复验整条攻击链 |
 
