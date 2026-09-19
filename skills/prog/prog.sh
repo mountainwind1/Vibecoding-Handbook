@@ -13,6 +13,17 @@ plan_block() { # $1 = PLAN.md
     while (n>0) { c=substr(s,n+1,1); if (c>="\200" && c<="\277") n--; else break }
     return substr(s,1,n) "…"
   }
+  function tags(s,  out,a,b){          # 取出标题里全部【…】标注
+    out=""
+    while ((a=index(s,"【"))>0) { s=substr(s,a); b=index(s,"】"); if (b==0) break
+      out=out substr(s,1,b+length("】")-1); s=substr(s,b+length("】")) }
+    return out
+  }
+  function tshow(t,n,  a,d){           # 标题过长：截描述、保标注
+    if (length(t)<=n) return t
+    a=index(t,"【"); d=(a>0?substr(t,1,a-1):t); sub(/[ —–-]+$/,"",d)
+    return utrunc(d,n) " " tags(t)
+  }
   function addtask(id,title,isdone){
     total[ms]++; n++; tms[n]=ms; tdone[n]=isdone; ttitle[n]=title
     short=id; if (id!="" && index(id, ms "-")==1) short=substr(id,length(ms)+2)
@@ -48,7 +59,7 @@ plan_block() { # $1 = PLAN.md
   }
   ms!="" && task!="" {                      # 任务块内以「待拍板：」「偏差：」开头的行 = 待你处理
     l=trim($0); sub(/^- */,"",l); sub(/^Evidence(:|：) */,"",l)
-    if (l ~ /^(待拍板|偏差)(:|：)/) { nf++; fms[nf]=ms; ftxt[nf]=task " " l }
+    if (l ~ /^(待拍板|偏差)(:|：)/) { nf++; fms[nf]=ms; ftxt[nf]=task " " l; if (l ~ /^待拍板/) blocked[n]=1 }
   }
   END {
     for (i=1;i<=nms;i++) { m=order[i]; d=done[m]+0; t=total[m]+0
@@ -72,19 +83,20 @@ plan_block() { # $1 = PLAN.md
       last=""; nxt=""; rest=""
       for (i=1;i<=n;i++) if (tms[i]==cur) {
         if (tdone[i]) last=ttitle[i]
-        else { if (nxt=="") nxt=ttitle[i]; rest=rest (rest==""?"":" → ") tshort[i] }
+        else { if (nxt=="") { nxt=ttitle[i]; nxti=i }; rest=rest (rest==""?"":" → ") tshort[i] }
       }
-      if (last!="") printf "最近勾选 %s\n", utrunc(last,120)
+      if (last!="") printf "最近勾选 %s\n", tshow(last,110)
       if (nxt=="") print "下一个   无——本里程碑任务已全勾：待收口 / 立项下一里程碑"
       else {
         hint="（可连续跑，不需要你）"
-        if (nxt ~ /收口/) hint="← 收口门：走 close，需要你到场"
+        if (blocked[nxti]) hint="← 卡在你这里：先处理下面的「待拍板」"
+        else if (nxt ~ /收口/) hint="← 收口门：走 close，需要你到场"
         else if (nxt ~ /单独|命门/) hint="← 命门：做完会停下等你核验"
         else if (nxt ~ /重型/) hint="← 重型：先出计划等你确认"
-        printf "下一个   %s  %s\n", utrunc(nxt,120), hint
+        printf "下一个   %s  %s\n", tshow(nxt,110), hint
       }
       split("① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨",c," "); k=0
-      for (i=1;i<=nf;i++) if (fms[i]==cur) { k++; printf "%s %s %s\n", (k==1?"待你处理":"        "), (k<=9?c[k]:"·"), utrunc(ftxt[i],140) }
+      for (i=1;i<=nf;i++) if (fms[i]==cur) { k++; printf "%s %s %s\n", (k==1?"待你处理":"        "), (k<=9?c[k]:"·"), ftxt[i] }
       if (k==0) print "待你处理 无"
       if (rest!="") printf "距收口   %s\n", utrunc(rest,160)
     }
@@ -156,12 +168,22 @@ selftest() {
 EOF
   out=$(PROG_NO_GH=1 "$0" "$tmp/PLAN.md") || { echo "selftest FAIL: 非零退出"; echo "$out"; exit 1; }
   fail=0
-  for want in "M3「用户可导入 CSV 并看到点位【涉敏】」" "3/5（60%）" "已收口 2 · 进行中 2 · 任务全勾待收口 0 · 未开 1" "收口必须过独立 A5 审计" "最近勾选 M3-T3" "下一个   M3-T4a1" "命门：做完会停下等你核验" "① T3 偏差：>50MB 文件未测" "② T4a1 待拍板：重复点合并策略" "距收口   T4a1 → T5" "其他在途 M-PRE1 1/2" "已收口里程碑下还有 1 项未勾：EXT-1（M1）"; do
+  for want in "M3「用户可导入 CSV 并看到点位【涉敏】」" "3/5（60%）" "已收口 2 · 进行中 2 · 任务全勾待收口 0 · 未开 1" "收口必须过独立 A5 审计" "最近勾选 M3-T3" "下一个   M3-T4a1" "卡在你这里：先处理下面的「待拍板」" "① T3 偏差：>50MB 文件未测" "② T4a1 待拍板：重复点合并策略" "距收口   T4a1 → T5" "其他在途 M-PRE1 1/2" "已收口里程碑下还有 1 项未勾：EXT-1（M1）"; do
     printf '%s' "$out" | grep -qF -- "$want" || { echo "selftest FAIL: 缺少「$want」"; fail=1; }
   done
   for bad in "已处理" "③" "Multi" "SEC-1"; do
     printf '%s' "$out" | grep -qF -- "$bad" && { echo "selftest FAIL: 不应出现「$bad」"; fail=1; }
   done
+  # 试用反馈（TideAnywhere M12）：长「待拍板」不许截断；长标题截描述保标注；卡在待拍板时提示要准
+  long="D55 五项（a 低-2 做法：设界 A / 逐站流式 B；b 三个上限数值 64 KiB / 16 MiB / 1 GiB；c 批次内符号链接一律拒；d 规则版本升 v5；e 旧批次不重判）结尾标记ZZ"
+  printf '## M9 · 长文本\n- [ ] **M9-T1 · 批次读取设界 + 先判目录后读 + 符号链接一律拒 + 规则版本升级以及其他很长很长的描述文字用来触发截断** —【常规】【单独+确认】（动受保护文件）状态：todo\n  待拍板：%s\n' "$long" > "$tmp/P4.md"
+  out4=$(PROG_NO_GH=1 "$0" "$tmp/P4.md")
+  for want in "结尾标记ZZ" "【常规】【单独+确认】" "卡在你这里：先处理下面的「待拍板」"; do
+    printf '%s' "$out4" | grep -qF -- "$want" || { echo "selftest FAIL(试用反馈): 缺少「$want」"; fail=1; }
+  done
+  # 下一个任务是命门、且没有待拍板 → 命门提示
+  printf '## M6 · 丁\n- [ ] **M6-T1 · 鉴权** —【重型】【单独+确认】（命门）\n' > "$tmp/P5.md"
+  PROG_NO_GH=1 "$0" "$tmp/P5.md" | grep -qF -- "命门：做完会停下等你核验" || { echo "selftest FAIL(命门提示)"; fail=1; }
   # 下一个任务是收口任务 → 提示需要用户到场
   printf '## M5 · 丙\n- [x] **M5-T1 · 做了**\n- [ ] **M5-T2 · 收口：部署与实机走查**\n' > "$tmp/P3.md"
   PROG_NO_GH=1 "$0" "$tmp/P3.md" | grep -qF -- "收口门：走 close，需要你到场" || { echo "selftest FAIL(收口提示)"; fail=1; }
