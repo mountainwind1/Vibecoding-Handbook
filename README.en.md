@@ -18,7 +18,7 @@
   <a href="https://github.com/mountainwind1/Vibecoding-Handbook/commits/main"><img src="https://img.shields.io/github/last-commit/mountainwind1/Vibecoding-Handbook" alt="Last commit"></a>
 </p>
 
-> Current release: **v6.1 · Multi-Agent Native + field-retrospective addendum** (published as an addendum inside the v6 handbook). v5.2 and v5.3 remain supported as lower-complexity paths; upgrading is optional. v6.1 also formalizes "v6 templates + a declared v5.3 mode" as a legitimate downgrade path, fully validated by a real 25-milestone project — see the retrospective in [examples/case-tidepoint.md](examples/case-tidepoint.md).
+> Current release: **v6.2 · visible progress + auto-loop + closeout gate as a skill** (published as an addendum inside the v6 handbook): adds `prog` (a project progress block after every task), `close` (the milestone closeout gate) and the `security-auditor` subagent; `kof` gains the `/kof a` auto-loop and no longer stores project state; stale facts were corrected against Claude Code / Codex as of 2026-09 (`ultrathink`, hard-coded model names, `@AGENTS.md` import, commands → skills). Validated on a full real-project milestone before release. v6.1 was the field-retrospective addendum. v5.2 and v5.3 remain supported as lower-complexity paths; upgrading is optional. v6.1 also formalizes "v6 templates + a declared v5.3 mode" as a legitimate downgrade path, fully validated by a real 25-milestone project — see the retrospective in [examples/case-tidepoint.md](examples/case-tidepoint.md).
 
 ## What this is
 

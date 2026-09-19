@@ -18,7 +18,7 @@
   <a href="https://github.com/mountainwind1/Vibecoding-Handbook/commits/main"><img src="https://img.shields.io/github/last-commit/mountainwind1/Vibecoding-Handbook" alt="Last commit"></a>
 </p>
 
-> 当前最新版：**v6.1 · Multi-Agent Native + 实战复盘增补**（在 v6 手册内以增补形式发布）。v5.2 与 v5.3 继续作为低复杂度稳定路径保留，不需要为了“追新”而强制升级——v6.1 并把「v6 模板 + v5.3 模式声明」正式化为合法降级路径（已被一个 25 里程碑真实项目完整验证，复盘见 [examples/case-tidepoint.md](examples/case-tidepoint.md)）。
+> 当前最新版：**v6.2 · 进度可见 + 自动循环 + 收口门 skill 化**（在 v6 手册内以增补形式发布）：新增 `prog`（每任务收尾的项目进度块）、`close`（里程碑收口验收门）、`security-auditor` 子代理，`kof` 增 `/kof a` 自动循环并不再存放项目状态；同时对照 2026-09 的 Claude Code / Codex 修正了过时事实（`ultrathink`、写死的模型名、`@AGENTS.md` import、commands → skill）。发版前已在真实项目跑完一个完整里程碑。v6.1 为实战复盘增补。v5.2 与 v5.3 继续作为低复杂度稳定路径保留，不需要为了“追新”而强制升级——v6.1 并把「v6 模板 + v5.3 模式声明」正式化为合法降级路径（已被一个 25 里程碑真实项目完整验证，复盘见 [examples/case-tidepoint.md](examples/case-tidepoint.md)）。
 
 ## 这是什么
 
