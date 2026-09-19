@@ -109,7 +109,7 @@ Claim exactly one unowned task before starting work.
 | Skill | Purpose |
 |---|---|
 | [skills/kof](skills/kof/SKILL.md) | Standard kick-off flow: resume / reload / explicit-task / auto-loop (`/kof a`) modes; prints a progress block after every task; includes the "consult another model" protocol |
-| [skills/prog](skills/prog/SKILL.md) | Read-only progress block: milestone n/m, whether the next task needs human verification, pending `待拍板` / `偏差` items, git and CI health — computed by a script from PLAN + git + gh; `prog.sh` also runs without any AI |
+| [skills/prog](skills/prog/SKILL.md) | Read-only progress block, three parts by default: **progress** (whole project + current milestone n/m) / **next task** (whether it needs you) / **pending** (`待拍板` decisions and `偏差` deviations); `--full` adds remaining tasks, other open milestones, debt under closed milestones, git and CI health — computed by a script from PLAN + git + gh; `prog.sh` also runs without any AI |
 | [skills/close](skills/close/SKILL.md) | Milestone closeout gate: steps 0–7, each producing evidence (re-run historical assertions, journey walkthrough, independent A5 audit, archiving, PR/CI, post-merge checks) |
 | [agents/security-auditor](agents/security-auditor.md) | Subagent definition for the A5 security audit: isolated context, four high-risk patterns, three-part report, re-verification of the full attack chain |
 
