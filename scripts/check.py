@@ -12,7 +12,10 @@ def tracked(): return [p for p in subprocess.run(["git", "ls-files", "-z"], capt
 # ① skill 脚本自检
 for cmd in (["bash", "skills/prog/prog.sh", "--selftest"], [sys.executable, "skills/xreview/xreview.py", "--selftest"]):
     r = subprocess.run(cmd, capture_output=True, text=True, env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1", PROG_NO_GH="1"))
-    if r.returncode != 0 or "selftest ok" not in r.stdout: fail(f"自检失败：{' '.join(cmd)}\n    {(r.stdout + r.stderr).strip()[-300:]}")
+    if r.returncode != 0 or "selftest ok" not in r.stdout:
+        out = (r.stdout + r.stderr).strip()
+        lines = [l for l in out.split("\n") if "FAIL" in l] or out.split("\n")[-8:]      # 先给失败的断言，别只给输出的尾巴
+        fail(f"自检失败：{' '.join(cmd)}\n    " + "\n    ".join(lines[:20]))
 
 mds = [p for p in tracked() if p.endswith(".md") and os.path.isfile(p)]
 for p in mds:
