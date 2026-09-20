@@ -1,20 +1,19 @@
-# AGENTS.md · 多 Agent 协作入口（模板 · 配套工作手册 v6）
+# AGENTS.md · 多 Agent 协作入口（模板 · 配套工作手册 v7）
 
 > Claude / Codex / 其他编程 Agent 进入项目时先读本文件，再读 ENGINEERING.md、PRD.md、PLAN.md。Claude Code 项目仍可保留 CLAUDE.md，但跨工具规则以本文件为准。
 > 加载方式：Codex 自动加载本文件（从仓库根到当前目录逐级拼接，**合计默认上限 32 KiB**，超出部分读不到——本文件保持精简，细节下沉 ENGINEERING.md）；Claude Code 只自动读 CLAUDE.md，由其中的 `@AGENTS.md` import 带入。
 
 ## 运行模式声明（先于一切规则）
 
-{示例：本项目运行在 Handbook v5.3 模式（见 DECISIONS D1）：不使用 `.vibe/`，SELFCHECK 中 R2.10 及 `.vibe` 相关断言不适用；布局断言基准视口为 1280px 桌面优先（见 D6）；i18n 条款已挂起（见 D××）。}
+{示例：布局断言基准视口为 1280px 桌面优先（见 D6）；i18n 条款已挂起（见 D××）。没有偏离默认之处就写"无"。}
 
-> 项目可以合法降级运行（v6 模板 + v5.3 模式）——实证：真实项目以此模式跑完 25 个里程碑。降级必须在此**显式声明并注明决策号**，让 SELFCHECK 与所有 Agent 有据可依：显式声明比每个会话口头解释便宜，也比默默不遵守诚实。未声明的豁免一律视为违规。
+> **默认模式不需要声明**：任务状态写在 PLAN.md（人读），不使用 `.vibe/`——这是被真实项目（25+ 个里程碑）验证过的路径。需要在此**显式声明并注明决策号**的是**偏离默认的地方**：替换布局基准视口、挂起某条硬规则、启用实验性的 `.vibe/` 机器状态层（手册附录 C）等。显式声明比每个会话口头解释便宜，也比默默不遵守诚实。未声明的豁免一律视为违规。
 
 ## 项目真相源
 
 - 产品真相：PRD.md
-- 当前任务真相：PLAN.md
-- 机器任务状态：.vibe/tasks/*.json
-- 项目协作状态：.vibe/project.json
+- 当前任务与任务状态真相：PLAN.md
+- （仅声明启用了实验性 `.vibe/` 的项目）机器任务状态：.vibe/tasks/*.json、.vibe/project.json
 - 工程规则：ENGINEERING.md
 - 决策历史：DECISIONS.md
 - 视觉真相：DESIGN.md
@@ -42,7 +41,7 @@ Writable Scope：{允许改的目录/文件}
 Evidence：{PR / commit / checks / screenshot / log}
 ```
 
-v6 项目中，PLAN.md 保留人读叙事；机器状态以 `.vibe/tasks/{task-id}.json` 为准。两者冲突时，先停下，由 Integration Owner 修正。
+任务状态以 PLAN.md 为准。任务行两种写法都可以、同一份 PLAN 只用一种：复选框，或表格 `| M3-T4 | 内容 | ⬜ / ✅ |`。（启用了实验性 `.vibe/` 的项目：机器状态以 `.vibe/tasks/{task-id}.json` 为准；与 PLAN 冲突时先停下，由 Integration Owner 修正。）
 
 认领规则：
 
@@ -91,7 +90,7 @@ Known risks：
 Next step：
 ```
 
-v6 项目中，handoff packet 必须同时写入对应 task JSON 的 `handoff` 字段。
+默认写进 PLAN 对应任务的 Evidence。（启用了实验性 `.vibe/` 的项目：同时写入对应 task JSON 的 `handoff` 字段。）
 
 ## Skills 迁移建议
 

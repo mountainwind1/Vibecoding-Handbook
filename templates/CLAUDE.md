@@ -1,6 +1,6 @@
-# CLAUDE.md · Claude Code 适配层（模板 · 配套工作手册 v6）
+# CLAUDE.md · Claude Code 适配层（模板 · 配套工作手册 v7）
 
-> Claude Code 会自动读入本文件。v6 起，跨工具通用规则写在 AGENTS.md / ENGINEERING.md，机器状态写在 `.vibe/`；本文件只保留 Claude Code 专属入口和补充规则。
+> Claude Code 会自动读入本文件。跨工具通用规则写在 AGENTS.md / ENGINEERING.md，任务状态写在 PLAN.md；本文件只保留 Claude Code 专属入口和补充规则。
 > 用法：把 {占位} 换成你项目的实际内容，删掉不适用的行。
 
 ## 启动顺序
@@ -11,9 +11,9 @@
 @ENGINEERING.md
 
 1. AGENTS.md 与 ENGINEERING.md 已随上面的 import 载入，不必再读。
-2. 再读 `.vibe/project.json` 和当前 `.vibe/tasks/{task-id}.json`。
-3. 再读 PRD.md / PLAN.md / DECISIONS.md / DESIGN.md 中与当前任务相关的部分。
-4. 本文件中的规则只作为 Claude Code 适配层；若与 AGENTS.md 或 `.vibe/` 冲突，以 `.vibe/` 的机器状态为准并停下报告。
+2. 再读 PLAN.md 当前里程碑与目标任务、DECISIONS.md 最新 2–3 条；PRD.md / DESIGN.md 读与当前任务相关的部分。
+3. 本文件中的规则只作为 Claude Code 适配层；若与 AGENTS.md 冲突，以 AGENTS.md 为准并停下报告。
+4. （仅 AGENTS.md 声明启用了实验性 `.vibe/` 的项目）再读 `.vibe/project.json` 和当前 `.vibe/tasks/{task-id}.json`；它与 PLAN 冲突时停下交 Integration Owner。
 
 ## 项目一句话
 {这个项目是什么、为谁、解决什么}（详见 PRD.md）

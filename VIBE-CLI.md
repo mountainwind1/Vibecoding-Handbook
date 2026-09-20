@@ -1,4 +1,6 @@
-# VIBE-CLI.md · v6 deterministic CLI 设计
+# VIBE-CLI.md · `.vibe/` 配套 CLI 设计草案（实验）
+
+> **状态：设计草案，未实现。** 它配套的 `.vibe/` 机器状态层在 v7 降为实验（手册附录 C）：没有真实项目用过，而 Claude Code / Codex 已原生提供子代理、worktree 隔离与长程执行。保留本文件作为设计记录。
 
 v6 的 CLI 先做薄层校验，不急着做完整调度器。第一版目标：读写 `.vibe/*.json`、验证状态迁移、检查 changed files 是否落在 writable scope、汇总 evidence 和 checks。
 
