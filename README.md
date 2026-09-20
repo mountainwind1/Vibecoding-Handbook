@@ -18,7 +18,7 @@
   <a href="https://github.com/mountainwind1/Vibecoding-Handbook/commits/main"><img src="https://img.shields.io/github/last-commit/mountainwind1/Vibecoding-Handbook" alt="Last commit"></a>
 </p>
 
-> 当前最新版：**v6.2 · 进度可见 + 自动循环 + 收口门 skill 化**（在 v6 手册内以增补形式发布）：新增 `prog`（每任务收尾的项目进度块）、`close`（里程碑收口验收门）、`security-auditor` 子代理，`kof` 增 `/kof a` 自动循环并不再存放项目状态；同时对照 2026-09 的 Claude Code / Codex 修正了过时事实（`ultrathink`、写死的模型名、`@AGENTS.md` import、commands → skill）。发版前已在真实项目跑完一个完整里程碑。v6.1 为实战复盘增补。v5.2 与 v5.3 继续作为低复杂度稳定路径保留，不需要为了“追新”而强制升级——v6.1 并把「v6 模板 + v5.3 模式声明」正式化为合法降级路径（已被一个 25 里程碑真实项目完整验证，复盘见 [examples/case-tidepoint.md](examples/case-tidepoint.md)）。 **v7 正在 main 上开发（未发版）**：`xreview` 异构复核门、`.vibe/` 降为实验、模板移入 `templates/`。
+> 当前最新版：**v7 · Field-Proven**——默认路径只留被真实项目验证过的机制：多 Agent 协作协议（任务状态在人读的 PLAN.md）为默认、`.vibe/` 降为实验；新增 `xreview` 异构模型复核门（把 diff 发给别家模型各出一份只读报告，外发限制机制化）；流程以可安装的 skill 交付（`kof` 开工 / `prog` 进度块 / `close` 收口门 / `xreview`）；项目模板在 [templates/](templates/)。**破坏性变更**，从 v6.x 升级见 [MIGRATION-v6-to-v7.md](MIGRATION-v6-to-v7.md)。v6 手册冻结于 v6.2。
 
 ## 这是什么
 
@@ -39,7 +39,7 @@
 |---|---|---|---|
 | **v5.2 · Single-Agent Solid** | 单人 + 单个 Claude Code 会话，长期正式项目 | 人读文档 | [手册](Vibe-Coding-正式项目工作手册v5.2.md) · [发布版](https://github.com/mountainwind1/Vibecoding-Handbook/releases/tag/v5.2) |
 | **v5.3 · Multi-Agent Ready** | 多会话 / 多 Worktree，或 Claude + Codex 混合开发 | PLAN 中的人读任务状态 | [手册](Vibe-Coding-正式项目工作手册v5.3.md) · [发布版](https://github.com/mountainwind1/Vibecoding-Handbook/releases/tag/v5.3) |
-| **v7 · Field-Proven**（main 上开发中，尚未发版） | v5.3 的协作协议 + 可安装的 skill（开工 / 进度块 / 收口门 / 异构复核）；默认路径只留被真实项目验证过的机制 | PLAN 中的人读任务状态（`.vibe/` 降为实验） | [手册](Vibe-Coding-正式项目工作手册v7.md) · [从 v6 升级](MIGRATION-v6-to-v7.md) |
+| **v7 · Field-Proven**（最新） | v5.3 的协作协议 + 可安装的 skill（开工 / 进度块 / 收口门 / 异构复核）；默认路径只留被真实项目验证过的机制 | PLAN 中的人读任务状态（`.vibe/` 降为实验） | [最新手册](Vibe-Coding-正式项目工作手册v7.md) · [发布版](https://github.com/mountainwind1/Vibecoding-Handbook/releases/tag/v7) · [从 v6 升级](MIGRATION-v6-to-v7.md) |
 | **v6 · Multi-Agent Native**（冻结于 v6.2） | 想试验机器可读任务状态的项目 | `.vibe/` 机器可读项目状态（未经真实项目验证） | [手册](Vibe-Coding-正式项目工作手册v6.md) · [发布版](https://github.com/mountainwind1/Vibecoding-Handbook/releases/tag/v6) |
 
 完整差异见 [VERSION-DIFF.md](VERSION-DIFF.md)。
