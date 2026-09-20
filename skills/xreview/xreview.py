@@ -22,7 +22,8 @@ SECRET_GLOBS = [".env", ".env.*", "*.pem", "*.key", "*.p12", "*.pfx", "*.keystor
 SECRET_OK = [".env.example", ".env.sample", ".env.template"]
 RESTRICTED_GLOBS = ["PRD*.md", "DESIGN*.md", "DECISIONS*.md", "doc/*", "docs/*", "*设计*", "*架构*", "*design*.md", "*architecture*.md",  # 全局设计文档
                     "*secret*", "*credential*", "*password*", "*passwd*", "*permission*", "*rbac*", "*密码*", "*密钥*", "*权限*"]           # 名字涉及口令 / 权限的文件
-RESTRICTED_OK = ["docs/reviews/*", "doc/reviews/*"]
+RESTRICTED_OK = ["docs/reviews/*_*_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].md",    # 只豁免评审报告的命名形态 {任务}_{评审方}_{日期}.md
+                 "doc/reviews/*_*_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].md"]
 
 def _hits(path, globs):
     """大小写不敏感（macOS 文件系统本来就不分）；整条路径、每一级目录名、文件名都拿去匹配。"""
@@ -39,14 +40,24 @@ def classify(path, extra_withhold=()):
         hits = [g for g in hits if not g.startswith(".env")]
     if hits:
         return "secret"
-    if (_match(path, RESTRICTED_GLOBS) or _match(path, list(extra_withhold))) and not _match(path, RESTRICTED_OK):
+    rhits = _hits(path, RESTRICTED_GLOBS) + _hits(path, list(extra_withhold))
+    p_ = path.replace("\\", "/").casefold()
+    if any(fnmatch.fnmatchcase(p_, g.casefold()) for g in RESTRICTED_OK):      # 评审报告只抵消 doc(s)/ 这一条，盖不掉别的命中
+        rhits = [g for g in rhits if g not in ("doc/*", "docs/*")]
+    if rhits:
         return "restricted"
     return "ok"
+
+def read_nofollow(f):
+    """不跟随符号链接地打开（检查与打开之间被换成链接也读不到别处）。"""
+    fd = os.open(f, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    with os.fdopen(fd, encoding="utf-8", errors="replace") as fh: return fh.read()
 
 def classify_file(f, extra_withhold=()):
     """磁盘上的文件：拒绝符号链接（名字正常、指向 .env 的那种），并按真实路径再分类一次。"""
     if os.path.islink(f): sys.exit(f"拒发：`{f}` 是符号链接——不跟随。把真正要发的文件路径写出来。")
     if not os.path.isfile(f): sys.exit(f"拒发：`{f}` 不是普通文件。")
+    if os.stat(f).st_nlink > 1: sys.exit(f"拒发：`{f}` 有多个硬链接（可能是某个凭证文件的别名）——复制一份干净的再来。")
     rank = {"ok": 0, "restricted": 1, "secret": 2}
     return max(classify(f, extra_withhold), classify(os.path.realpath(f), extra_withhold), key=rank.get)
 
@@ -68,17 +79,20 @@ def split_diff(text):
     return parts
 
 def build_payload(diff_text, includes, include_restricted, authorized, extra_withhold=(), excludes=()):
+    # include_restricted：用户授权点名的需授权文件（glob 列表）。只放行点到名的，其余照旧扣下。
+    include_restricted = list(include_restricted or [])
     """→ (payload_text, included_paths, withheld_paths)；违规直接 SystemExit。"""
     included, withheld, chunks = [], [], []
     rank = {"ok": 0, "restricted": 1, "secret": 2}
     for path, hunk, old in split_diff(diff_text):
-        if _match(path, list(excludes)) and _match(old, list(excludes)): continue
+        if _match(path, list(excludes)) or (old and _match(old, list(excludes))): continue
         # 重命名 / 复制：hunk 里带着旧文件的内容 → 新旧路径都分类，取更严的
         kind = max(classify(path, extra_withhold), classify(old, extra_withhold), key=rank.get)
         if kind != classify(path, extra_withhold): path = f"{old} → {path}"
         if kind == "secret":
             sys.exit(f"拒发：评审包含凭证文件 `{path}`。这类内容没有授权开关——用 --exclude 去掉它再来。")
-        if kind == "restricted" and not include_restricted:
+        named = _match(path, include_restricted) or (old and _match(old, include_restricted))
+        if kind == "restricted" and not named:
             withheld.append(path); continue
         if kind == "restricted" and not authorized:
             sys.exit(f"拒发：`{path}` 属需授权内容（全局设计文档 / 名字涉及口令·权限的文件），发给第三方需要用户授权——先问用户，再带 --authorized \"<授权记录>\"。")
@@ -89,17 +103,18 @@ def build_payload(diff_text, includes, include_restricted, authorized, extra_wit
             sys.exit(f"拒发：`{f}` 属密钥/凭证类路径，没有授权开关。")
         if not authorized:
             sys.exit(f"拒发：额外附带文件 `{f}` 需要用户授权——先问用户，再带 --authorized \"<授权记录>\"。")
-        with open(f, encoding="utf-8", errors="replace") as fh:
-            chunks.append(f"\n=== 附带文件：{f} ===\n{fh.read()}\n")
+        chunks.append(f"\n=== 附带文件：{f} ===\n{read_nofollow(f)}\n")
         included.append(f)
     return "".join(chunks), included, withheld
 
 SECRET_RES = [r"AKIA[0-9A-Z]{16}", r"-----BEGIN [A-Z ]*PRIVATE KEY-----", r"\bsk-[A-Za-z0-9_\-]{20,}", r"\bghp_[A-Za-z0-9]{30,}",
               r"\bxox[abps]-[A-Za-z0-9\-]{10,}", r"\bglpat-[A-Za-z0-9_\-]{20,}", r"\beyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.",
-              r"(?i)(pass(word|wd)?|secret|token|api[_-]?key)\w*\s*[:=]\s*[^\s\"'{$<][^\s]{11,}", r"(?i)(pass(word|wd)?|secret|token|api[_-]?key)\w*\s*[:=]\s*[\"'][^\"'\s]{8,}[\"']"]
+              r"(?i)(pass(word|wd)?|secret|token|api[_-]?key)\w*\s*[:=]\s*[^\s\"'{$<][^\s]{11,}", r"(?i)(pass(word|wd)?|secret|token|api[_-]?key)\w*[\"']?\s*[:=]\s*[\"'][^\"'\s]{8,}[\"']"]
 
-def scan_secrets(payload_dir, use_gitleaks=True):
+def scan_secrets(payload_dir, use_gitleaks=True, allow_weak=True):
     """发现疑似密钥 → SystemExit。不回显密钥本身。"""
+    if use_gitleaks and not shutil.which("gitleaks") and not allow_weak:
+        sys.exit("拒发：未安装 gitleaks（手册 M0 的 DoD 之一）。外发前的密钥扫描不降级到弱正则——装上它，或明知风险时带 --allow-weak-scan。")
     if use_gitleaks and shutil.which("gitleaks"):
         r = subprocess.run(["gitleaks", "dir", payload_dir, "--no-banner", "--redact", "--exit-code", "1"],
                            capture_output=True, text=True)
@@ -178,7 +193,8 @@ def review_http(vendor, prompt, payload_text, timeout=600, _test_url=None):
         {"role": "user", "content": f"{prompt}\n=== 评审包开始 ===\n{payload_text}\n=== 评审包结束 ==="}]}).encode()
     req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"})
     try:
-        with urllib.request.build_opener(_NoRedirect).open(req, timeout=timeout) as resp:
+        handlers = [_NoRedirect] if os.environ.get("XREVIEW_USE_PROXY") == "1" else [_NoRedirect, urllib.request.ProxyHandler({})]
+        with urllib.request.build_opener(*handlers).open(req, timeout=timeout) as resp:   # 默认不经系统代理：评审包与 key 只去点名的主机
             data = json.loads(resp.read().decode())
         return data["choices"][0]["message"]["content"], f"{vendor}（{model}）"
     except Exception as e:                       # 不回显请求头 / key
@@ -199,7 +215,7 @@ def run(args):
         if kind == "secret": sys.exit(f"拒发：`{args.payload}` 属密钥/凭证类路径，没有授权开关。")
         if not args.authorized:
             sys.exit(f"拒发：整份文件 `{args.payload}` 发给第三方需要用户授权——先问用户，再带 --authorized \"<授权记录>\"。")
-        payload = open(args.payload, encoding="utf-8", errors="replace").read(); included, withheld = [args.payload], []
+        payload = read_nofollow(args.payload); included, withheld = [args.payload], []
     else:
         r = subprocess.run(["git", "-c", "core.quotepath=false", "diff", "--no-color", f"{args.base}...HEAD"], capture_output=True, text=True)
         if r.returncode != 0: sys.exit(f"git diff 失败：{r.stderr.strip()}")
@@ -215,7 +231,7 @@ def run(args):
     pdir = tempfile.mkdtemp(prefix="run-", dir=root)
     try:
         with open(os.path.join(pdir, "payload.diff"), "w", encoding="utf-8") as fh: fh.write(payload)
-        scanner = scan_secrets(pdir)
+        scanner = scan_secrets(pdir, allow_weak=args.allow_weak_scan)
         sha = hashlib.sha256(payload.encode()).hexdigest()[:16]
         print(f"评审包   {size} 字节 · sha256 {sha} · 密钥扫描：{scanner} 通过")
         print(f"包含     {len(included)} 个文件：{', '.join(included[:12])}{' …' if len(included) > 12 else ''}")
@@ -254,31 +270,31 @@ def selftest():
     # 路径分类
     for p, want in [(".env", "secret"), ("deploy/.env.production", "secret"), (".env.example", "ok"), ("certs/server.pem", "secret"),
                     ("src/app/credentials.py", "restricted"), ("PRD.md", "restricted"), ("doc/05_系统设计.md", "restricted"),
-                    ("docs/reviews/M3_codex.md", "ok"), ("DECISIONS-ARCHIVE.md", "restricted"), ("src/auth/password_reset.py", "restricted"), ("config/权限表.yaml", "restricted"), ("src/api/routes.py", "ok"), ("PLAN.md", "ok")]:
+                    ("docs/reviews/M3-T4_codex_20260920.md", "ok"), ("docs/reviews/M3_codex.md", "restricted"), ("DECISIONS-ARCHIVE.md", "restricted"), ("src/auth/password_reset.py", "restricted"), ("config/权限表.yaml", "restricted"), ("src/api/routes.py", "ok"), ("PLAN.md", "ok")]:
         check(f"classify {p}", classify(p) == want)
     check("classify 项目追加的扣下规则", classify("spec/内部口径.md", ["spec/*"]) == "restricted")
     # 评审包：设计文档默认扣下、密钥路径拒发、授权与排除
     d = lambda p: f"diff --git a/{p} b/{p}\n--- a/{p}\n+++ b/{p}\n@@ -1 +1 @@\n-old {p}\n+new {p}\n"
     diff = d("src/a.py") + d("PRD.md") + d("tests/test_a.py")
-    text, inc, wh = build_payload(diff, [], False, None)
+    text, inc, wh = build_payload(diff, [], [], None)
     check("设计文档默认扣下", inc == ["src/a.py", "tests/test_a.py"] and wh == ["PRD.md"] and "new PRD.md" not in text and "new src/a.py" in text)
     # 中文文件名：原样路径要能分类；八进制转义的路径无法分类 → 拒发（否则设计文档会混在上一个文件的 hunk 里溜出去）
-    text, inc, wh = build_payload(d("src/a.py") + d("doc/05_系统设计.md") + d("src/数据.py"), [], False, None)
+    text, inc, wh = build_payload(d("src/a.py") + d("doc/05_系统设计.md") + d("src/数据.py"), [], [], None)
     check("中文设计文档被扣下", wh == ["doc/05_系统设计.md"] and inc == ["src/a.py", "src/数据.py"] and "系统设计" not in text)
     quoted = d("src/a.py") + 'diff --git "a/\\347\\263\\273\\347\\273\\237.md" "b/\\347\\263\\273\\347\\273\\237.md"\n+机密设计\n'
-    must_exit("八进制转义路径", lambda: build_payload(quoted, [], False, None), "无法解析")
-    must_exit("--include-restricted 无授权", lambda: build_payload(diff, [], True, None), "需要用户授权")
-    text, inc, wh = build_payload(diff, [], True, "用户 2026-09-20 同意：PRD 给 codex")
+    must_exit("八进制转义路径", lambda: build_payload(quoted, [], [], None), "无法解析")
+    must_exit("--include-restricted 无授权", lambda: build_payload(diff, [], ["PRD.md"], None), "需要用户授权")
+    text, inc, wh = build_payload(diff, [], ["PRD.md"], "用户 2026-09-20 同意：PRD 给 codex")
     check("授权后设计文档进包", "PRD.md" in inc and "new PRD.md" in text)
-    must_exit("密钥路径拒发", lambda: build_payload(diff + d(".env"), [], True, "有授权也不行"), "没有授权开关")
-    text, inc, wh = build_payload(diff + d(".env"), [], False, None, excludes=[".env"])
+    must_exit("密钥路径拒发", lambda: build_payload(diff + d(".env"), [], ["*"], "有授权也不行"), "没有授权开关")
+    text, inc, wh = build_payload(diff + d(".env"), [], [], None, excludes=[".env"])
     check("--exclude 去掉密钥路径后可发", ".env" not in inc and "new .env" not in text)
     # —— 以下用例来自 Codex 对本脚本的隔离评审（docs/reviews/xreview-self_codex_20260920.md），逐条先复现后修 ——
     ren = ("diff --git a/.env b/config/app.txt\nsimilarity index 90%\nrename from .env\nrename to config/app.txt\n"
            "--- a/.env\n+++ b/config/app.txt\n@@ -1 +1 @@\n-DB_PASS=x\n+DB_PASS=y\n")
-    must_exit("重命名绕过：.env → config/app.txt", lambda: build_payload(ren, [], False, None), "没有授权开关")
+    must_exit("重命名绕过：.env → config/app.txt", lambda: build_payload(ren, [], [], None), "没有授权开关")
     ren2 = ren.replace(".env", "PRD.md").replace("DB_PASS", "scope")
-    text, inc, wh = build_payload(d("src/a.py") + ren2, [], False, None)
+    text, inc, wh = build_payload(d("src/a.py") + ren2, [], [], None)
     check("重命名绕过：PRD.md → 普通路径仍被扣下", len(wh) == 1 and "PRD.md" in wh[0] and "scope" not in text)
     for p_, want in [("SERVER.PEM", "secret"), ("Secrets/prod.yaml", "restricted"), ("prd.md", "restricted"), ("Docs/internal.md", "restricted"),
                      ("secret/.env.example", "restricted"), ("config/.env.example", "ok"), ("deploy/.ENV.production", "secret"),
@@ -290,15 +306,31 @@ def selftest():
     check("隔离预检：探针不存在不得通过", codex_isolation_ok("/tmp", "/nonexistent/x'; echo BLOCKED; '") is False)
     ln_dir = tempfile.mkdtemp(); real = os.path.join(ln_dir, ".env"); link = os.path.join(ln_dir, "notes.md")
     open(real, "w").write("K=1"); os.symlink(real, link)
-    try: must_exit("符号链接 notes.md → .env", lambda: build_payload("", [link], False, "用户同意附带 notes.md"), "符号链接")
+    try: must_exit("符号链接 notes.md → .env", lambda: build_payload("", [link], [], "用户同意附带 notes.md"), "符号链接")
     finally: shutil.rmtree(ln_dir, ignore_errors=True)
+    # —— 以下用例来自 DeepSeek 的评审（docs/reviews/xreview-self2_deepseek_20260920.md），同样逐条先复现后修 ——
+    two = d("PRD.md") + d("docs/权限设计.md")
+    text, inc, wh = build_payload(two, [], ["PRD.md"], "用户只同意 PRD 给 codex")
+    check("授权点名文件：只放行点到名的", inc == ["PRD.md"] and wh == ["docs/权限设计.md"] and "权限设计" not in text)
+    check("docs/reviews 豁免收窄", classify("docs/reviews/PRD.md") == "restricted" and classify("docs/reviews/M3-T4_codex_20260920.md") == "ok"
+          and classify("docs/reviews/design_codex_20260920.md") == "restricted" and classify("docs/reviews/系统设计_glm_20260920.md") == "restricted")
+    text, inc, wh = build_payload(ren, [], [], None, excludes=[".env"])
+    check("--exclude 对重命名文件按旧路径也生效", inc == [] and "DB_PASS" not in text)
+    check("正则兜底认带引号的 JSON 键", any(re.search(rx, '+  "password": "hunter2hunter2",') for rx in SECRET_RES))
+    must_exit("缺 gitleaks 默认拒发", lambda: (shutil.which("gitleaks") and sys.exit("拒发：未安装 gitleaks（模拟）")) or scan_secrets("/tmp", allow_weak=False), "未安装 gitleaks")
+    hl_dir = tempfile.mkdtemp(); hreal = os.path.join(hl_dir, ".env"); hlink = os.path.join(hl_dir, "note.md")
+    open(hreal, "w").write("K=1"); os.link(hreal, hlink)
+    try: must_exit("硬链接 note.md ↔ .env", lambda: build_payload("", [hlink], [], "用户同意附带 note.md"), "硬链接")
+    finally: shutil.rmtree(hl_dir, ignore_errors=True)
+    hs = [type(h).__name__ for h in urllib.request.build_opener(_NoRedirect, urllib.request.ProxyHandler({})).handlers]
+    check("默认 opener 不带系统代理", hs.count("ProxyHandler") <= 1 and not urllib.request.ProxyHandler({}).proxies)
     # --include 附带文件：无授权拒发；密钥路径有授权也拒发；有授权才进包
     inc_dir = tempfile.mkdtemp(); note = os.path.join(inc_dir, "note.md"); envf = os.path.join(inc_dir, ".env")
     open(note, "w", encoding="utf-8").write("附带说明-MARK"); open(envf, "w").write("X=1")
     try:
-        must_exit("--include 无授权", lambda: build_payload(diff, [note], False, None), "需要用户授权")
-        must_exit("--include 密钥路径", lambda: build_payload(diff, [envf], False, "有授权也不行"), "没有授权开关")
-        text, inc, wh = build_payload(diff, [note], False, "用户同意附带 note.md")
+        must_exit("--include 无授权", lambda: build_payload(diff, [note], [], None), "需要用户授权")
+        must_exit("--include 密钥路径", lambda: build_payload(diff, [envf], [], "有授权也不行"), "没有授权开关")
+        text, inc, wh = build_payload(diff, [note], [], "用户同意附带 note.md")
         check("--include 授权后进包", note in inc and "附带说明-MARK" in text)
     finally: shutil.rmtree(inc_dir, ignore_errors=True)
     # 内容扫描（强制走正则兜底，不依赖本机有没有 gitleaks）
@@ -353,12 +385,14 @@ def main():
     ap.add_argument("--focus", help="请评审方重点看的方面（一句话）")
     ap.add_argument("--exclude", action="append", default=[], metavar="GLOB", help="从 diff 里去掉匹配的文件（可重复）")
     ap.add_argument("--withhold", action="append", default=[], metavar="GLOB", help="项目追加的\"需授权才外发\"路径（可重复）")
-    ap.add_argument("--include-restricted", action="store_true", help="把 diff 里被扣下的需授权文件（设计文档 / 名字涉及口令·权限）也发出去（须 --authorized）")
+    ap.add_argument("--include-restricted", action="append", default=[], metavar="GLOB",
+                    help="点名放行 diff 里被扣下的需授权文件（可重复；须 --authorized）。只放行点到名的——用户同意发 PRD.md，不等于同意发别的设计文档")
     ap.add_argument("--include", action="append", default=[], metavar="FILE", help="额外附带文件（须 --authorized）")
     ap.add_argument("--authorized", metavar="记录", help="用户授权记录：谁、何时、同意把什么发给谁")
     ap.add_argument("--authorized-for", metavar="评审方", help="这次授权点名的接收方（逗号分隔）。带了 --authorized 就必须带它；没点到名的评审方本次不发")
     ap.add_argument("--out", default="docs/reviews"); ap.add_argument("--max-bytes", type=int, default=400_000)
     ap.add_argument("--probe", help="Codex 隔离预检用的仓库内文件（默认取 git ls-files 第一个）")
+    ap.add_argument("--allow-weak-scan", action="store_true", help="未安装 gitleaks 时允许退到正则弱扫描（默认拒发）")
     ap.add_argument("--dry-run", action="store_true", help="只显示会发什么，不发")
     args = ap.parse_args()
     sys.exit(selftest() if args.selftest else run(args))
