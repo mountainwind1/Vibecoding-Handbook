@@ -177,7 +177,7 @@ TIER 1 全部照旧：不直推 main、不自审 A5、危险命令先确认、�
 
 **做法**：
 
-1. 通道：Claude Code 里用 `mcp__codex__codex`（延迟工具，先 `ToolSearch` `select:mcp__codex__codex` 再调）；没有 MCP 时用对方的无交互 CLI（如 `codex exec`）。项目若限制代码外发给第三方模型，以项目 DECISIONS 为准——没拍板过就先问用户。
+1. 通道：**评审一份 diff 用 `xreview` skill**（外发规则已机制化：默认只发 diff、凭证永不发、设计文档与口令·权限类文件须用户授权并点名接收方、评审方拿不到仓库）。只是讨论方案、不发代码时，Claude Code 里可用 `mcp__codex__codex`（延迟工具，先 `ToolSearch` `select:mcp__codex__codex` 再调）——**同样的外发限制照样适用**：别把凭证、设计文档、权限配置贴进提问里；拿不准就先问用户。
 2. 对方**不共享本会话上下文**：必须一次写清问题、约束（规格章节号 / 已有 D 编号 / 相关 `file:line`）、候选方案与各自代价，否则只会拿到泛泛之谈。
 3. **拿到回复先自己实测复核再采信。** 先例：有项目实测修正了 Codex 的两处结论。**禁止把"某模型说"写进 Evidence 当依据——依据只能是实测结果。**
 4. 落痕：属决策 → DECISIONS 追加一条（背景 / 决定 / 理由 / 影响）；属评审往返 → 存 `docs/reviews/{任务}_{模型}_{日期}.md` 并在 PLAN Evidence 引用。

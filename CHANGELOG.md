@@ -9,6 +9,11 @@
 
 ## [Unreleased]
 - {进行中、尚未发版的变更}
+### 新增（v7 批次 3 · 多 Agent：异构复核门）
+- `skills/xreview`：把被评审的 diff 发给别家模型（Codex / DeepSeek / GLM）各出一份只读报告，主控合并裁决。`xreview.py` 只用标准库，带 `--dry-run` 与 `--selftest`。**外发规则机制化**：默认只发 diff；凭证文件永不外发 + gitleaks 扫内容（异常即拒发）；全局设计文档与名字涉及口令·权限的文件默认扣下，要发须 `--include-restricted --authorized … --authorized-for …`（授权点名接收方）；Codex 走权限档隔离且每次预检（正 / 负对照），DeepSeek / GLM 直连 HTTPS（域名白名单、不跟随重定向）；key 只从环境变量取。
+- 手册阶段 5 新增 5.1「`xreview` 复核门与多 Agent 的分工原则」：按独立性划分 Agent（执行者 / 独立验证者 / 只读调研者）、主控 = Integration Owner、复核门位置与强度、裁决规则（多方同报优先、独报先复现）、外发限制是硬约束、按难度派工为试验路径。
+- `ENGINEERING.md` 模板新增「外发限制」节；`close` 第 4 步可叠加 `xreview`；`kof` 的"找另一个模型讨论"指向 `xreview` 的外发规则；模型档映射表增「异构评审方」行。
+- `docs/reviews/xreview-self_codex_20260920.md`：`xreview` 的第一次真实运行——Codex 在隔离环境里审它自己，读码审出 7 条守卫绕过，全部先复现后修复并各落一条自检用例。
 
 ## [v6.2] - 2026-09-19
 > 两个来源：① 对照 2026-09 的 Claude Code / Codex 修正过时事实；② 多个真实项目实跑的反馈（进度黑箱、不停点"下一步"）。发版前在 TideAnywhere 跑完一个完整里程碑（M12：立项 → `/kof a` → `close` 八步 → 0.14.0），期间的试用反馈已并入本版。

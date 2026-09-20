@@ -70,6 +70,13 @@ v6 项目必须额外满足：
 - {示例：历史/审计表 append-only，禁止 UPDATE；原始来源数据不可覆盖}
 - {示例：密钥只在 `.env`；`Read(.env)` 已在 permissions 对 AI 拒读}
 
+## 外发限制（什么能发给第三方模型；`xreview` 与"找另一个模型讨论"都受它约束）
+
+- 默认只发被评审的代码 diff。凭证文件（`.env*` / 私钥 / `auth.json` …）永不外发。
+- 全局设计文档、名字涉及口令·权限的文件：默认扣下；要发必须**先问用户**，授权要点名接收方（`--authorized` + `--authorized-for`）。
+- 本项目追加的禁区（调用 `xreview` 时逐条 `--withhold`）：{如 `data/**`、`deploy/**`、`*客户*`}
+- 常设授权（可选，须记 DECISIONS）：{如 D××：PRD 可发给 Codex；不发给其他厂商}
+
 ## Vendor-neutral Adapter
 
 - Claude Code：`CLAUDE.md` 可以保留工具特定注意事项，但不能成为唯一项目真相；共同规则用 `@AGENTS.md`、`@ENGINEERING.md` import 加载，不靠"请先读"。

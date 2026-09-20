@@ -279,7 +279,8 @@ def selftest():
     text, inc, wh = build_payload(d("src/a.py") + ren2, [], False, None)
     check("重命名绕过：PRD.md → 普通路径仍被扣下", len(wh) == 1 and "PRD.md" in wh[0] and "scope" not in text)
     for p_, want in [("SERVER.PEM", "secret"), ("Secrets/prod.yaml", "restricted"), ("prd.md", "restricted"), ("Docs/internal.md", "restricted"),
-                     ("secret/.env.example", "restricted"), ("config/.env.example", "ok"), ("deploy/.ENV.production", "secret")]:
+                     ("secret/.env.example", "restricted"), ("config/.env.example", "ok"), ("deploy/.ENV.production", "secret"),
+                     ("backup.pem/.env.example", "secret")]:         # .env.example 只豁免 .env* 规则，盖不掉目录名命中的 *.pem
         check(f"大小写/逐级目录 classify {p_}", classify(p_) == want)
     check("授权须点名接收方", bind_recipients("codex,deepseek,glm", "codex") == ("codex", ["deepseek", "glm"]))
     must_exit("授权未点名接收方", lambda: bind_recipients("codex,glm", None), "点名")
