@@ -8,6 +8,7 @@ description: 异构模型复核门——把被评审的 diff 发给"别家"模�
 > 不同厂商的模型盲区不同：实现方自己查不出的问题，换一家常常一眼看到。但对方是**顾问不是裁判**——它看不到仓库、没有运行环境，所有发现都只是「读码推断」。
 > 安装：整个目录复制到项目的 `.claude/skills/xreview/`（Codex：`.agents/skills/xreview/`）。只用 Python 标准库。
 > key 只从环境变量取：`DEEPSEEK_API_KEY`、`GLM_API_KEY`（或 `ZHIPUAI_API_KEY`），由用户自己设在 shell 配置里；**任何时候不读、不打印、不写入它们的值**。缺 key 的评审方自动跳过。Codex 用本机已登录的 `codex` CLI。
+> 模型名不用配置：脚本内置各家当前的旗舰档（`deepseek-v4-pro`、`glm-5.3`，2026-09 对照官方文档核实）；厂商换代后改脚本里 `HTTP_VENDORS` 一处，或临时用环境变量 `XREVIEW_DEEPSEEK_MODEL` / `XREVIEW_GLM_MODEL` 覆盖（想省钱可设成 `deepseek-flash` / `glm-5.3-flash`）。
 
 ## 外发规则（机制化，不靠自觉）
 

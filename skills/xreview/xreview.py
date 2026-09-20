@@ -154,9 +154,11 @@ def review_codex(payload_dir, prompt, probe, timeout=900):
     text = open(out, encoding="utf-8").read(); os.remove(out)
     return text, "codex（CLI 默认模型）"
 
+# 默认模型名 2026-09-20 对照官方文档核实（api-docs.deepseek.com/quick_start/pricing、docs.bigmodel.cn 模型概览）。
+# 模型换代：改这里一处，或用环境变量 XREVIEW_DEEPSEEK_MODEL / XREVIEW_GLM_MODEL 临时覆盖。评审用各家的旗舰档。
 HTTP_VENDORS = {
-    "deepseek": dict(url="https://api.deepseek.com/chat/completions", keys=["DEEPSEEK_API_KEY"], model="deepseek-chat"),
-    "glm": dict(url="https://open.bigmodel.cn/api/paas/v4/chat/completions", keys=["GLM_API_KEY", "ZHIPUAI_API_KEY"], model="glm-4.6"),
+    "deepseek": dict(url="https://api.deepseek.com/chat/completions", keys=["DEEPSEEK_API_KEY"], model="deepseek-v4-pro"),
+    "glm": dict(url="https://open.bigmodel.cn/api/paas/v4/chat/completions", keys=["GLM_API_KEY", "ZHIPUAI_API_KEY"], model="glm-5.3"),
 }
 
 ALLOWED_HOSTS = {"api.deepseek.com", "open.bigmodel.cn", "api.z.ai"}   # 要加别的端点：改这里，是一次有意的动作
