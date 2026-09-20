@@ -14,6 +14,7 @@
 ### 新增（v7 批次 2）
 - 手册仓库自用的 `AGENTS.md` / `CLAUDE.md`（真规则，不再是模板）；自装 skill——`.claude/skills`、`.claude/agents`、`.agents/skills` 是指向 `skills/`、`agents/` 的符号链接，源只有一份。
 - `scripts/check.py` + GitHub Actions：本地与 CI 同一条命令——skill 脚本自检、Markdown 围栏成对、相对链接不断、SELFCHECK 段标齐全、根目录不得混进项目模板、自装 skill 必须是符号链接。
+- **新 CI 第一次运行就抓到一个真 bug**：`prog.sh` 的标题截断在 macOS（BWK awk，按字节）与 Linux（gawk 在 UTF-8 locale 下按字符）不一致——同一份 PLAN 在 Linux 上的输出长 3 倍，本地自检永远测不出。修法：awk 统一在 `LC_ALL=C` 下按字节处理。正是手册护栏 3"本地绿 ≠ CI 绿"的又一例，也是给一个文档仓库配 CI 值不值的答案。
 - PLAN 任务行两种写法都认可：复选框，或表格 `| M3-T4 | 内容 | ⬜ / ✅ |`（真实项目里两种都在用；`prog` 自 v6.2 起两种都认）。
 ### 变更（v7 批次 2）
 - `SELFCHECK.md` → v7：R2.10 仅对启用 `.vibe/` 的项目适用；R5.* 去掉重复编号（门禁层 → R5.6，`.vibe` 状态门 → R5.7）。
