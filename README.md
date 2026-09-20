@@ -5,7 +5,7 @@
 
 <p align="center">
   面向 Claude Code、Codex 与其他编程 Agent 的正式项目工程方法。<br>
-  从单 Agent 长期开发，到多 Agent、多 Worktree、多机协作，都有清晰的项目真相、执行边界与交付门禁。
+  从单 Agent 长期开发，到多 Agent、多 Worktree、异构模型互相复核，都有清晰的项目真相、执行边界与交付门禁。
 </p>
 
 <p align="center">
@@ -18,7 +18,7 @@
   <a href="https://github.com/mountainwind1/Vibecoding-Handbook/commits/main"><img src="https://img.shields.io/github/last-commit/mountainwind1/Vibecoding-Handbook" alt="Last commit"></a>
 </p>
 
-> 当前最新版：**v6.2 · 进度可见 + 自动循环 + 收口门 skill 化**（在 v6 手册内以增补形式发布）：新增 `prog`（每任务收尾的项目进度块）、`close`（里程碑收口验收门）、`security-auditor` 子代理，`kof` 增 `/kof a` 自动循环并不再存放项目状态；同时对照 2026-09 的 Claude Code / Codex 修正了过时事实（`ultrathink`、写死的模型名、`@AGENTS.md` import、commands → skill）。发版前已在真实项目跑完一个完整里程碑。v6.1 为实战复盘增补。v5.2 与 v5.3 继续作为低复杂度稳定路径保留，不需要为了“追新”而强制升级——v6.1 并把「v6 模板 + v5.3 模式声明」正式化为合法降级路径（已被一个 25 里程碑真实项目完整验证，复盘见 [examples/case-tidepoint.md](examples/case-tidepoint.md)）。
+> 当前最新版：**v6.2 · 进度可见 + 自动循环 + 收口门 skill 化**（在 v6 手册内以增补形式发布）：新增 `prog`（每任务收尾的项目进度块）、`close`（里程碑收口验收门）、`security-auditor` 子代理，`kof` 增 `/kof a` 自动循环并不再存放项目状态；同时对照 2026-09 的 Claude Code / Codex 修正了过时事实（`ultrathink`、写死的模型名、`@AGENTS.md` import、commands → skill）。发版前已在真实项目跑完一个完整里程碑。v6.1 为实战复盘增补。v5.2 与 v5.3 继续作为低复杂度稳定路径保留，不需要为了“追新”而强制升级——v6.1 并把「v6 模板 + v5.3 模式声明」正式化为合法降级路径（已被一个 25 里程碑真实项目完整验证，复盘见 [examples/case-tidepoint.md](examples/case-tidepoint.md)）。 **v7 正在 main 上开发（未发版）**：`xreview` 异构复核门、`.vibe/` 降为实验、模板移入 `templates/`。
 
 ## 这是什么
 
@@ -39,15 +39,16 @@
 |---|---|---|---|
 | **v5.2 · Single-Agent Solid** | 单人 + 单个 Claude Code 会话，长期正式项目 | 人读文档 | [手册](Vibe-Coding-正式项目工作手册v5.2.md) · [发布版](https://github.com/mountainwind1/Vibecoding-Handbook/releases/tag/v5.2) |
 | **v5.3 · Multi-Agent Ready** | 多会话 / 多 Worktree，或 Claude + Codex 混合开发 | PLAN 中的人读任务状态 | [手册](Vibe-Coding-正式项目工作手册v5.3.md) · [发布版](https://github.com/mountainwind1/Vibecoding-Handbook/releases/tag/v5.3) |
-| **v6 · Multi-Agent Native** | 多 Agent、多机、长期并行与自动调度 | `.vibe/` 机器可读项目状态 | [最新手册](Vibe-Coding-正式项目工作手册v6.md) · [发布版](https://github.com/mountainwind1/Vibecoding-Handbook/releases/tag/v6) |
+| **v7 · Field-Proven**（main 上开发中，尚未发版） | v5.3 的协作协议 + 可安装的 skill（开工 / 进度块 / 收口门 / 异构复核）；默认路径只留被真实项目验证过的机制 | PLAN 中的人读任务状态（`.vibe/` 降为实验） | [手册](Vibe-Coding-正式项目工作手册v7.md) · [从 v6 升级](MIGRATION-v6-to-v7.md) |
+| **v6 · Multi-Agent Native**（冻结于 v6.2） | 想试验机器可读任务状态的项目 | `.vibe/` 机器可读项目状态（未经真实项目验证） | [手册](Vibe-Coding-正式项目工作手册v6.md) · [发布版](https://github.com/mountainwind1/Vibecoding-Handbook/releases/tag/v6) |
 
 完整差异见 [VERSION-DIFF.md](VERSION-DIFF.md)。
 
-## v6 的协作模型
+## 协作模型
 
 ```mermaid
 flowchart LR
-    A["Project Truth<br/>PRD · PLAN · DECISIONS · .vibe"] --> B["Task Claim<br/>Owner · Scope · Worktree"]
+    A["Project Truth<br/>PRD · PLAN · DECISIONS"] --> B["Task Claim<br/>Owner · Scope · Worktree"]
     B --> C1["Claude Code"]
     B --> C2["Codex"]
     B --> C3["Other Agents"]
@@ -62,8 +63,8 @@ flowchart LR
 
 ## 快速开始
 
-1. 根据上表选择版本。单人项目优先从 v5.2 开始；真实并行协作再选 v5.3 或 v6。
-2. 把对应模板复制到项目根目录。v6 至少保留 `AGENTS.md`、`ENGINEERING.md`、`.vibe/`、`PRD.md`、`PLAN.md`、`DECISIONS.md`、`CHANGELOG.md` 与 `DESIGN.md`。
+1. 根据上表选择版本。新项目直接用 v7；v5.2 / v5.3 的手册仍可单独阅读。
+2. 把 [templates/](templates/) 里的模板复制到项目根目录：至少 `AGENTS.md`、`ENGINEERING.md`、`CLAUDE.md`、`PRD.md`、`PLAN.md`、`DECISIONS.md`、`CHANGELOG.md` 与 `DESIGN.md`，把 `{占位}` 换成项目的实际内容。再把 [skills/](skills/) 下的目录原样装进项目的 `.claude/skills/`（Codex：`.agents/skills/`），[agents/security-auditor.md](agents/security-auditor.md) 装进 `.claude/agents/`。
 3. 先完成阶段 0 的规则和安全基线，再依次建立 PRD、设计系统、计划与决策日志。
 4. 每个任务明确 Owner、状态、Worktree、可写范围、完成定义和验证命令；一任务一 commit，每个任务收尾输出进度块；想连做用 `/kof a` 自动循环，它命中停止条件（队列做完、CI 红、需要拍板、命门、收口）才停，且永不自动合并 PR。
 5. 每个里程碑必须通过用户旅程走查、确定性检查、CI 和集成门禁，之后再合并与记录版本。
@@ -71,7 +72,7 @@ flowchart LR
 新会话可从这句开始：
 
 ```text
-读取 AGENTS.md、ENGINEERING.md、PRD.md、PLAN.md、DECISIONS.md、SELFCHECK.md 和 .vibe/，
+读取 AGENTS.md、ENGINEERING.md、PRD.md、PLAN.md、DECISIONS.md，
 确认当前项目真相、任务 Owner、可写范围与集成门禁；只认领一个未被占用的任务再开始工作。
 ```
 
@@ -81,27 +82,29 @@ flowchart LR
 
 | 文件 | 作用 |
 |---|---|
-| [Vibe-Coding-正式项目工作手册v6.md](Vibe-Coding-正式项目工作手册v6.md) | v6 完整方法与执行模板 |
+| [Vibe-Coding-正式项目工作手册v7.md](Vibe-Coding-正式项目工作手册v7.md) | **当前主手册**：完整方法与执行模板 |
+| [Vibe-Coding-正式项目工作手册v6.md](Vibe-Coding-正式项目工作手册v6.md) | v6 手册（冻结于 v6.2） |
+| [MIGRATION-v6-to-v7.md](MIGRATION-v6-to-v7.md) | 从 v6.x 升级到 v7：模板路径、运行模式声明方向翻转、`.vibe/` 去留 |
 | [VERSION-DIFF.md](VERSION-DIFF.md) | v5.2 / v5.3 / v6 的选型边界 |
 | [MIGRATION-v5.2-to-v5.3.md](MIGRATION-v5.2-to-v5.3.md) | 从单 Agent 稳定模式升级到 Multi-Agent Ready |
 | [MIGRATION-v5.3-to-v6.md](MIGRATION-v5.3-to-v6.md) | 从人读任务状态升级到机器可读状态 |
-| [VIBE-CLI.md](VIBE-CLI.md) | v6 任务状态、确定性检查与集成门禁的 CLI 设计 |
+| [VIBE-CLI.md](VIBE-CLI.md) | `.vibe/` 配套 CLI 的设计草案（实验，未实现） |
 
-### 项目真相模板
+### 项目模板（都在 `templates/`，复制到你的项目根目录用）
 
 | 文件 | 作用 |
 |---|---|
-| [AGENTS.md](AGENTS.md) | 所有 Agent 的通用入口、Ownership、Claim、Scope 与 Handoff 规则 |
-| [ENGINEERING.md](ENGINEERING.md) | 与厂商无关的命令、契约、CI、分支和集成规则 |
-| [CLAUDE.md](CLAUDE.md) | Claude Code 适配层；跨工具规则仍以上述通用文件为准 |
-| [PRD.md](PRD.md) | 业务规则、用户旅程、契约指针与验收标准 |
-| [PLAN.md](PLAN.md) | 当前里程碑、任务边界与收口门禁 |
-| [DECISIONS.md](DECISIONS.md) | 只增不改的架构与产品决策日志 |
-| [DESIGN.md](DESIGN.md) | 前端设计系统的单一真相 |
-| [CHANGELOG.md](CHANGELOG.md) | 版本与里程碑交付记录 |
-| [SELFCHECK.md](SELFCHECK.md) | 面向大模型的机读自查与防遗忘协议 |
-| [DEPLOY.md](DEPLOY.md) | 部署手册：「配错时不报错」的防线清单与回滚演练 |
-| [OPERATIONS.md](OPERATIONS.md) | 运维备忘：运行期「界面上看不出来」的行为 |
+| [templates/AGENTS.md](templates/AGENTS.md) | 所有 Agent 的通用入口、Ownership、Claim、Scope 与 Handoff 规则 |
+| [templates/ENGINEERING.md](templates/ENGINEERING.md) | 与厂商无关的命令、契约、CI、分支和集成规则 |
+| [templates/CLAUDE.md](templates/CLAUDE.md) | Claude Code 适配层；跨工具规则仍以上述通用文件为准 |
+| [templates/PRD.md](templates/PRD.md) | 业务规则、用户旅程、契约指针与验收标准 |
+| [templates/PLAN.md](templates/PLAN.md) | 当前里程碑、任务边界与收口门禁 |
+| [templates/DECISIONS.md](templates/DECISIONS.md) | 只增不改的架构与产品决策日志 |
+| [templates/DESIGN.md](templates/DESIGN.md) | 前端设计系统的单一真相 |
+| [templates/CHANGELOG.md](templates/CHANGELOG.md) | 版本与里程碑交付记录 |
+| [templates/SELFCHECK.md](templates/SELFCHECK.md) | 面向大模型的机读自查与防遗忘协议 |
+| [templates/DEPLOY.md](templates/DEPLOY.md) | 部署手册：「配错时不报错」的防线清单与回滚演练 |
+| [templates/OPERATIONS.md](templates/OPERATIONS.md) | 运维备忘：运行期「界面上看不出来」的行为 |
 
 ### 标准 Skill
 
@@ -115,22 +118,24 @@ flowchart LR
 
 安装：把 `skills/` 下的目录**原样**复制到项目的 `.claude/skills/`（Codex：`.agents/skills/`），`agents/security-auditor.md` 复制到 `.claude/agents/`。skill 里不放项目状态——根命令与业务红线写在项目的 `ENGINEERING.md`，命门 / 涉敏点 / 本机环境 / 踩过的坑写在项目的 `CLAUDE.md`，所以手册升级时直接覆盖即可。用法：`/kof`（续接）、`/kof c`（/clear 后重载）、`/kof M3-T2`（指定任务）、`/kof a`（自动循环）、`/prog`（看进度）、`/close`（收口）。
 
-### Multi-Agent Native
+### 实验：`.vibe/` 机器可读状态层（默认不启用）
 
-- `.vibe/project.json`：持久化项目状态与调度拓扑。
-- `.vibe/tasks/*.json`：机器可执行的任务、Owner、Scope、依赖、状态与证据。
-- `.vibe/checks/default.json`：确定性检查集合。
-- `.vibe/.schema/`：项目和任务状态的 JSON Schema。
+设计于 v6，但没有真实项目用过；要用须在项目 `AGENTS.md` 的「运行模式声明」里显式声明（手册附录 C）。
+
+- `templates/.vibe/project.json`：持久化项目状态与调度拓扑。
+- `templates/.vibe/tasks/*.json`：机器可执行的任务、Owner、Scope、依赖、状态与证据。
+- `templates/.vibe/checks/default.json`：确定性检查集合。
+- `templates/.vibe/.schema/`：项目和任务状态的 JSON Schema。
 - `examples/`：任务认领、Worktree、交接包和证据链示例。
 
 ## 设计原则
 
 - **项目真相属于仓库**：不依赖某个模型、会话或开发者的记忆。
-- **兼容优先**：v6 是可选增强层，不会让 v5.2 用户的稳定流程失效。
-- **人机双读**：Markdown 保持可讨论，`.vibe/` 让状态可校验、可调度。
+- **实证优先**：没有在真实项目里验证过的机制不进默认路径——`.vibe/` 设计了、没人用过，v7 把它降为实验；`/kof a` 自动循环则是从真实项目里回填上来的。
+- **人读文档是真相**：状态写在 PLAN.md；进度由脚本从 PLAN + git 现算，不另存一份会漂移的状态。
 - **集成是一种角色**：实现 Agent 不能自行宣布合并完成，集成负责人负责跨任务验证。
 - **证据先于结论**：命令、输出、提交、PR 与旅程记录组成 Evidence Chain。
-- **自动化必须确定**：CLI 负责状态转换和门禁，不替代 PRD、设计与业务判断。
+- **自动化必须确定**：进度块、外发守卫、仓库自检都由带自检的脚本算出（`prog.sh`、`xreview.py`、`scripts/check.py`），不经模型转述；它们不替代 PRD、设计与业务判断。
 
 ## 使用边界
 
