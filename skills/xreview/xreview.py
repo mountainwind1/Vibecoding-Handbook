@@ -177,6 +177,21 @@ HTTP_VENDORS = {
     "glm": dict(url="https://open.bigmodel.cn/api/paas/v4/chat/completions", keys=["GLM_API_KEY", "ZHIPUAI_API_KEY"], model="glm-5.3"),
 }
 
+def read_sse(resp):
+    """OpenAI 兼容的流式响应 → 拼出最终正文（思考过程 reasoning_content 不要）。非流式 JSON 也兼容。"""
+    out, raw = [], []
+    for line in resp:
+        line = line.decode("utf-8", errors="replace").rstrip("\r\n"); raw.append(line)
+        if not line.startswith("data:"): continue
+        chunk = line[5:].strip()
+        if chunk == "[DONE]": break
+        try: delta = json.loads(chunk)["choices"][0].get("delta") or {}
+        except (ValueError, KeyError, IndexError): continue
+        if delta.get("content"): out.append(delta["content"])
+    if out: return "".join(out)
+    try: return json.loads("\n".join(raw))["choices"][0]["message"]["content"]     # 对方没按流式回
+    except Exception: return ""
+
 ALLOWED_HOSTS = {"api.deepseek.com", "open.bigmodel.cn", "api.z.ai"}   # 要加别的端点：改这里，是一次有意的动作
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -190,14 +205,15 @@ def review_http(vendor, prompt, payload_text, timeout=600, _test_url=None):
     u = urllib.parse.urlparse(url)
     if not _test_url and (u.scheme != "https" or u.hostname not in ALLOWED_HOSTS):
         return None, f"拒发：{vendor} 的接口地址 `{u.scheme}://{u.hostname}` 不在白名单（只允许 https + {sorted(ALLOWED_HOSTS)}）"
-    body = json.dumps({"model": model, "stream": False, "messages": [
+    body = json.dumps({"model": model, "stream": True, "messages": [     # 流式：长思考时连接不空闲，不会被中途掐断
         {"role": "user", "content": f"{prompt}\n=== 评审包开始 ===\n{payload_text}\n=== 评审包结束 ==="}]}).encode()
     req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"})
     try:
         handlers = [_NoRedirect] if os.environ.get("XREVIEW_USE_PROXY") == "1" else [_NoRedirect, urllib.request.ProxyHandler({})]
         with urllib.request.build_opener(*handlers).open(req, timeout=timeout) as resp:   # 默认不经系统代理：评审包与 key 只去点名的主机
-            data = json.loads(resp.read().decode())
-        return data["choices"][0]["message"]["content"], f"{vendor}（{model}）"
+            text = read_sse(resp)
+        if not text.strip(): return None, f"{vendor} 返回了空内容"
+        return text, f"{vendor}（{model}）"
     except Exception as e:                       # 不回显请求头 / key
         return None, f"{vendor} 调用失败：{type(e).__name__}: {str(e)[:200]}"
 
@@ -352,8 +368,12 @@ def selftest():
     class H(http.server.BaseHTTPRequestHandler):
         def do_POST(self):
             seen["auth"] = self.headers.get("Authorization"); seen["body"] = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-            out = json.dumps({"choices": [{"message": {"content": "[中] src/a.py:1 — 假发现"}}]}).encode()
-            self.send_response(200); self.send_header("Content-Type", "application/json"); self.end_headers(); self.wfile.write(out)
+            if seen["body"].get("model") == "m-nonstream":
+                out = json.dumps({"choices": [{"message": {"content": "非流式也能读"}}]}).encode(); ctype = "application/json"
+            else:
+                ev = lambda d: ("data: " + json.dumps({"choices": [{"delta": d}]}) + "\n\n")
+                out = (ev({"reasoning_content": "思考过程不该进报告"}) + ev({"content": "[中] src/a.py:1 "}) + ev({"content": "— 假发现"}) + "data: [DONE]\n\n").encode(); ctype = "text/event-stream"
+            self.send_response(200); self.send_header("Content-Type", ctype); self.end_headers(); self.wfile.write(out)
         def log_message(self, *a): pass
     srv = http.server.HTTPServer(("127.0.0.1", 0), H); threading.Thread(target=srv.serve_forever, daemon=True).start()
     saved = {k: os.environ.pop(k, None) for k in ["DEEPSEEK_API_KEY", "XREVIEW_DEEPSEEK_URL", "XREVIEW_DEEPSEEK_MODEL", "GLM_API_KEY", "ZHIPUAI_API_KEY"]}
@@ -362,7 +382,11 @@ def selftest():
         os.environ.update(DEEPSEEK_API_KEY="test-key-not-real", XREVIEW_DEEPSEEK_MODEL="m-test")
         t, info = review_http("deepseek", "提示词", "PAYLOAD-BODY", _test_url=f"http://127.0.0.1:{srv.server_port}/chat/completions")
         check("HTTP 返回解析", t == "[中] src/a.py:1 — 假发现" and "m-test" in info)
-        check("HTTP 请求形态", seen.get("auth") == "Bearer test-key-not-real" and seen["body"]["model"] == "m-test" and "PAYLOAD-BODY" in seen["body"]["messages"][0]["content"])
+        check("HTTP 请求形态", seen.get("auth") == "Bearer test-key-not-real" and seen["body"]["model"] == "m-test" and seen["body"]["stream"] is True and "PAYLOAD-BODY" in seen["body"]["messages"][0]["content"])
+        check("流式拼接且不含思考过程", "思考过程" not in (t or ""))
+        os.environ["XREVIEW_DEEPSEEK_MODEL"] = "m-nonstream"
+        t2, _ = review_http("deepseek", "P", "X", _test_url=f"http://127.0.0.1:{srv.server_port}/chat/completions"); check("对方回非流式 JSON 也能读", t2 == "非流式也能读")
+        os.environ["XREVIEW_DEEPSEEK_MODEL"] = "m-test"
         check("报告信息不含 key", "test-key-not-real" not in info)
         # 环境变量想把接口改到别处（明文 http / 非厂商域名）→ 拒发，且不发任何请求
         seen.clear()
