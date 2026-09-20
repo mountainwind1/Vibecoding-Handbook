@@ -1,6 +1,4 @@
-# 正式项目版 Vibe Coding 工作手册 v6 · Multi-Agent Native
-
-> **本文件冻结于 v6.2（2026-09-19），不再更新。** 最新版是 [v7 手册](Vibe-Coding-正式项目工作手册v7.md)：`.vibe/` 降为实验、新增 `xreview` 异构复核门、模板移入 `templates/`。仍想按 v6 使用 `.vibe/` 的，用 tag `v6.2`。
+# 正式项目版 Vibe Coding 工作手册 v7 · Field-Proven（默认路径只留实证过的机制）
 
 > 在原"一套提示词覆盖大部分 Vibe Coding 场景"基础上改造，
 > 保留：角色提示、版本规划、MVP/后续版本拆分、Business Rules + Data Contract、跨模型评审。
@@ -19,7 +17,9 @@
 >
 > v6.2 增补（多项目实跑反馈 + 对照 2026-09 的模型与工具）：**过时事实修正**（`ultrathink` 失效、模型名不再写死——新增模型档映射表与工具适配表、`@AGENTS.md` import、commands → skill）；**进度不再是黑箱**——新增 `prog` skill，每个任务收尾输出由 PLAN + git + gh 现算的进度块，Evidence 用 `待拍板：` / `偏差：` 标记把需要人知道的事挂出来；**人工检查点上移**——`kof` 新增模式四 `/kof a` 自动循环（回填自 TideAnywhere 实战：连做任务不等逐个发话，命中停止条件即停，永不自动合并 PR）与"找另一个模型讨论"规程，逐项盯 diff 换成"验收前置 + 独立评审 + 收口重验"；**收口门 skill 化**（`close`）并随附 `security-auditor` 子代理，让"A5 禁止自审"从纪律变机制；`kof` 不再存放项目状态，可原样安装与升级；SELFCHECK 由每会话强制改为按需执行。
 >
-> 配套文件：`.vibe/`(机器可读项目状态) · `AGENTS.md`(通用 Agent 入口) · `ENGINEERING.md`(工程规则) · `CLAUDE.md`(Claude 适配层) · `PRD.md`(活的需求规格) · `PLAN.md`(人读任务叙事) · `DECISIONS.md`(决策日志) · `CHANGELOG.md`(版本日志) · `DESIGN.md`(设计系统，阶段 1.5 产出) · `DEPLOY.md`(部署手册) · `OPERATIONS.md`(运维备忘)
+> v7 增补（破坏性 · 结构调整）：**默认路径只留被真实项目验证过的机制。** ① 协作状态回归人读文档——多 Agent 协作协议（源自 v5.3：Ownership / Claim / Writable Scope / Worktree / Integration Gate / Evidence）是默认，**`.vibe/` 机器状态层降为实验**（附录 C）：它设计于 v6，但至今没有任何真实项目用过，而"v6 模板 + v5.3 模式"跑完了 25+ 个里程碑——默认路径和被验证路径此前是反的。② **`xreview` 异构复核门**（阶段 5.1）：把 diff 发给别家模型各出一份只读报告，外发限制机制化（默认只发 diff、凭证永不发、设计文档与口令·权限类文件须用户授权并点名文件与接收方、评审方拿不到仓库）。③ **项目模板移入 `templates/`**，手册仓库根目录不再有模板（它们曾被当成本仓库的真指令加载）；流程以 skill 形式交付（`skills/`：`kof` / `prog` / `close` / `xreview`，`agents/security-auditor`）。从 v6.x 升级见 `MIGRATION-v6-to-v7.md`。
+>
+> 配套文件：模板都在 `templates/`——`AGENTS.md`(通用 Agent 入口) · `ENGINEERING.md`(工程规则) · `CLAUDE.md`(Claude 适配层) · `PRD.md`(活的需求规格) · `PLAN.md`(人读任务叙事 + 任务状态) · `DECISIONS.md`(决策日志) · `CHANGELOG.md`(版本日志) · `DESIGN.md`(设计系统，阶段 1.5 产出) · `SELFCHECK.md`(按需自查协议) · `DEPLOY.md`(部署手册) · `OPERATIONS.md`(运维备忘) · `.vibe/`(实验 · 可选)。可安装的流程：`skills/`（`kof` 开工 · `prog` 进度块 · `close` 收口门 · `xreview` 异构复核）与 `agents/security-auditor`。
 
 ---
 
@@ -32,8 +32,8 @@
 | `CLAUDE.md` | 怎么做事：技术栈约定、命名规范、禁止项、易错点 | 稳定，规则变才改 | 你 + AI 协助 |
 | `AGENTS.md` | 所有 Agent 的共同入口：真相源、任务认领、可写范围、交接包 | 稳定，协作规则变才改 | 你 + AI 协助 |
 | `ENGINEERING.md` | 与具体工具无关的工程规则：命令、CI、契约、集成门禁、证据链 | 稳定，工程机制变才改 | 你 + AI 协助 |
-| `.vibe/tasks/*.json` | 机器可执行任务状态：claim、scope、依赖、checks、handoff、evidence | 每个任务状态变化时更新 | Agent 写，Integration Owner 审 |
-| `.vibe/project.json` | 项目持久状态：版本、当前 milestone/phase、拓扑、默认 gates | 阶段变化时更新 | 你 + Integration Owner |
+| `.vibe/tasks/*.json`（**实验 · 可选**，附录 C） | 机器可执行任务状态：claim、scope、依赖、checks、handoff、evidence | 每个任务状态变化时更新 | Agent 写，Integration Owner 审 |
+| `.vibe/project.json`（**实验 · 可选**，附录 C） | 项目持久状态：版本、当前 milestone/phase、拓扑、默认 gates | 阶段变化时更新 | 你 + Integration Owner |
 | `PRD.md` | 做什么：当前版本的需求规格(活文档，直接改而非堆叠) | 按版本演进 | AI 生成、你审 |
 | `PLAN.md` | 任务清单 + 完成的定义(接力棒) | 每个任务后更新 | AI + 你 |
 | `DECISIONS.md` | 决策日志：关键架构/取舍决策(只增不改) | 有决策时追加 | AI 追加、你审 |
@@ -51,9 +51,11 @@
 
 ---
 
-## v5.3 Multi-Agent Ready：先加协作协议，不急着上调度系统
+## 多 Agent 协作协议（默认路径 · 源自 v5.3，已被 25+ 个里程碑的真实项目验证）
 
-v5.2 已经能支撑"单人 + 一个主 Agent"长期项目。v5.3 解决的是下一层现实问题：你可能同时开 Claude、Codex、多个浏览器/终端会话，甚至给不同 worktree 分派任务。此时最大的风险不是"Agent 不够聪明"，而是**多个 Agent 同时相信自己拥有全局上下文**，最后互相覆盖、越界修改、证据断链。
+> v7：这一节就是默认的协作方式——状态写在人读的 PLAN.md 里，不需要任何机器状态层。想把状态做成机器可读（`.vibe/`）的，见附录 C（实验）。异构模型之间怎么分工、怎么互相复核，见阶段 5.1。
+
+单人 + 一个主 Agent 的长期项目，靠文档分工就够了。这一节解决的是下一层现实问题：你可能同时开 Claude、Codex、多个浏览器/终端会话，甚至给不同 worktree 分派任务。此时最大的风险不是"Agent 不够聪明"，而是**多个 Agent 同时相信自己拥有全局上下文**，最后互相覆盖、越界修改、证据断链。
 
 v5.3 的原则：
 
@@ -166,142 +168,6 @@ Known risks：
 ```
 
 证据链写回 PLAN 的 Evidence 字段；大型 Phase 可以新增 `EVIDENCE.md`，PLAN 只留链接。
-
----
-
-## v6 Multi-Agent Native：把协作状态变成可执行项目真相
-
-v5.3 的状态写在 PLAN.md，适合人读、低复杂度、少量并行。v6 的状态进入 `.vibe/`，目标是让多个 Agent、多个 worktree、多个机器能围绕同一份机器可读真相协作。
-
-### Project Truth 与 Agent Runtime 分离
-
-v6 区分两类状态：
-
-- **Project Truth**：提交进 git 的项目事实，例如 `.vibe/project.json`、`.vibe/tasks/*.json`、PRD、PLAN、DECISIONS、ENGINEERING。
-- **Agent Runtime**：某个 Agent 临时运行状态，例如本地 token、临时日志、草稿、模型记忆、工具缓存。默认写入 `.vibe/runtime/`，不作为项目真相，必要时 gitignore。
-
-规则：Agent 可以有 runtime，但合并依据只能是 project truth + evidence。任何"我记得"、"我刚才跑过"都必须落成 evidence 才算数。
-
-### `.vibe/tasks` 任务结构
-
-每个任务一个 JSON 文件：
-
-```json
-{
-  "id": "M3-T4",
-  "title": "支付 webhook 签名校验",
-  "milestone": "M3",
-  "state": "todo",
-  "owner": null,
-  "role": "backend",
-  "priority": "high",
-  "writable_scope": ["apps/api/src/payments/**", "packages/contracts/src/payment.ts"],
-  "protected_scope": ["migrations/**", "package-lock.json"],
-  "depends_on": ["M3-T1"],
-  "contract_refs": ["payment-webhook"],
-  "checks": ["lint", "typecheck", "test:payments", "security:a5"],
-  "evidence": [],
-  "handoff": null
-}
-```
-
-状态机：
-
-```text
-todo → claimed → in_progress → blocked
-                   ↓
-                 review → integration → integrated
-                   ↓
-                 rejected
-```
-
-合法迁移由 CLI 或检查脚本验证，禁止直接把 `todo` 改成 `integrated`。
-
-### 持久化 Project State
-
-`.vibe/project.json` 保存：
-
-- 当前版本、当前 Phase / Milestone。
-- 默认分支、integration 分支策略。
-- Agent runtime 目录。
-- 调度拓扑。
-- 默认 deterministic checks。
-- protected scopes。
-- contract owner / freeze 状态。
-
-这不是替代 PRD。PRD 仍写"做什么和为什么"；`.vibe/project.json` 写"现在机器如何协作和验证"。
-
-### 调度拓扑
-
-v6 支持三种拓扑：
-
-- `solo`：一个 Agent 顺序执行，仍使用 `.vibe` 留状态。
-- `hub-and-spoke`：多个 Task Agent 并行，Integration Owner 汇合。
-- `pipeline`：需求/契约/实现/测试/安全/集成按阶段流转。
-
-调度拓扑不是越复杂越好。默认使用 `hub-and-spoke`，只有任务之间天然流水线化时才用 `pipeline`。
-
-### Contract Owner / Freeze
-
-契约是多 Agent 并行的同步点。v6 每个 contract 有 owner 和 freeze 状态：
-
-```json
-{
-  "id": "payment-webhook",
-  "owner": "integration",
-  "path": "packages/contracts/src/payment.ts",
-  "state": "frozen",
-  "breaking_change_requires": ["DECISIONS", "affected_tasks_review"]
-}
-```
-
-freeze 后，依赖该契约的任务可以并行；破坏性变更必须退回 contract review。
-
-### Handoff Packet
-
-handoff 不再只是文本，而是任务 JSON 的字段：
-
-```json
-{
-  "from": "codex-api-1",
-  "to": "integration",
-  "state": "review",
-  "summary": "实现 webhook 签名校验与幂等处理",
-  "changed_scope": ["apps/api/src/payments/**"],
-  "evidence": ["commit:abc123", "check:test:payments:passed"],
-  "known_risks": ["尚未用真实 Stripe CLI replay"],
-  "next_step": "Integration Owner 跑端到端 replay"
-}
-```
-
-### Integration / Merge Gate
-
-v6 的 gate 是 deterministic check，不靠口头 checklist：
-
-1. 任务状态必须是 `review`。
-2. `writable_scope` 覆盖所有 changed files。
-3. `protected_scope` 改动必须有 owner approval。
-4. 所有 `checks` 通过。
-5. 所有 `contract_refs` 不处于 broken / thawing。
-6. evidence 非空，并覆盖关键 checks。
-7. PRD / PLAN / CHANGELOG / DECISIONS 同步状态合法。
-
-### CLI 设计
-
-v6 推荐实现一个很薄的 `vibe` CLI：
-
-```text
-vibe status
-vibe claim M3-T4 --owner codex-api-1 --worktree ../wt/codex-api-1
-vibe start M3-T4
-vibe block M3-T4 --reason "等待支付价格拍板"
-vibe evidence add M3-T4 --type check --ref "test:payments:passed"
-vibe handoff M3-T4 --to integration --summary "..."
-vibe gate M3-T4
-vibe integrate M3-T4 --pr 42
-```
-
-CLI 的第一版只需要读写 JSON、检查状态迁移、验证 changed files 是否落在 writable scope 内。不要一开始就做复杂调度器。
 
 ---
 
@@ -541,6 +407,7 @@ PRD 确认后，把它变成可执行的接力棒。在 Plan 模式下输入：
 - 【垂直切片·最重要】里程碑之间按"用户能完成的完整动作"切，不按技术层切：每个里程碑必须交付一条从"用户点击→看到结果"贯穿前端/API/逻辑/数据的最小完整竖切，哪怕功能很薄，也要是"真实用户能走通的一件事"。纯地基（脚手架/CI）可作为第 0 个非切片里程碑，其余一律垂直切片。
 - 【切片内部才分层】在一个里程碑（一条竖切）内部，按 数据库 schema → 算法/核心逻辑 → 后端 API（先把路径/入参/出参/错误码契约定稿）→ 前端（按契约对接）的顺序排任务，用契约把层解耦。分层是"切片内部的顺序"，不是"里程碑之间的切法"。
 - 每个里程碑写明【里程碑级完成定义】：一个新用户能用它完成什么、看到什么结果（这就是它的"可玩验收"）。
+- 任务行两种写法都可以，同一个 PLAN 里只用一种：**复选框**（`- [ ] **M3-T4 · 名称** —【重型】【单独+确认】`，任务块下面好写 Evidence）或**表格**（`| M3-T4 | 内容 | ⬜ / ✅ |`，任务多、描述短时更紧凑）。`prog` 两种都认。
 - 颗粒度：每个任务 = 一个可独立回滚的 commit——改动集中（文件不要太多）、完成定义能被命令或断言判定；太大的拆成子任务。
 - 每个任务写明"完成的定义"（对应 PRD 的验收标准）。**前端任务的"完成定义"必须显式列出交互四态（加载/空/错误/成功）、响应式断点、对照 DESIGN.md 一致性、布局程序化断言（见 B3：无横向溢出/裁切、375px 重跑）——不是"功能渲染出来"就算完。**
 - 每个任务标注【复杂度：重型/常规/轻型】和【执行模式：可批量/单独+确认】。分档口诀：出错代价大/逻辑复杂/不可逆，任一为"是"即重型；鉴权/实时同步/状态机/数据模型/核心算法/动钱（支付/账本/发放）/外部 webhook 入口是命门，一律【单独+确认】。
@@ -1180,6 +1047,144 @@ gstack 的"铁律：未查清根因前不许改"，能挡住最浪费时间的�
 
 ---
 
+## 附录 C · 实验：`.vibe/` 机器可读状态层（未经真实项目验证，默认不启用）
+
+> **状态：实验。** 这一层设计于 v6，目标是让多个 Agent / worktree / 机器围绕同一份机器可读状态协作。但截至 v7，**没有任何真实项目用过它**，配套的 `vibe` CLI 也只是设计草案（`VIBE-CLI.md`）；同期，Claude Code 与 Codex 都原生有了子代理、worktree 隔离与长程执行。所以 v7 把它移出默认路径：模板在 `templates/.vibe/`，**要用的项目在 `AGENTS.md` 的「运行模式声明」里显式声明启用**，并接受它未经实证这一事实。哪天有项目真的跑通了，再凭实证把它请回正文。以下为 v6 原文，未改动。
+
+v5.3 的状态写在 PLAN.md，适合人读、低复杂度、少量并行。v6 的状态进入 `.vibe/`，目标是让多个 Agent、多个 worktree、多个机器能围绕同一份机器可读真相协作。
+
+### C · Project Truth 与 Agent Runtime 分离
+
+v6 区分两类状态：
+
+- **Project Truth**：提交进 git 的项目事实，例如 `.vibe/project.json`、`.vibe/tasks/*.json`、PRD、PLAN、DECISIONS、ENGINEERING。
+- **Agent Runtime**：某个 Agent 临时运行状态，例如本地 token、临时日志、草稿、模型记忆、工具缓存。默认写入 `.vibe/runtime/`，不作为项目真相，必要时 gitignore。
+
+规则：Agent 可以有 runtime，但合并依据只能是 project truth + evidence。任何"我记得"、"我刚才跑过"都必须落成 evidence 才算数。
+
+### C · `.vibe/tasks` 任务结构
+
+每个任务一个 JSON 文件：
+
+```json
+{
+  "id": "M3-T4",
+  "title": "支付 webhook 签名校验",
+  "milestone": "M3",
+  "state": "todo",
+  "owner": null,
+  "role": "backend",
+  "priority": "high",
+  "writable_scope": ["apps/api/src/payments/**", "packages/contracts/src/payment.ts"],
+  "protected_scope": ["migrations/**", "package-lock.json"],
+  "depends_on": ["M3-T1"],
+  "contract_refs": ["payment-webhook"],
+  "checks": ["lint", "typecheck", "test:payments", "security:a5"],
+  "evidence": [],
+  "handoff": null
+}
+```
+
+状态机：
+
+```text
+todo → claimed → in_progress → blocked
+                   ↓
+                 review → integration → integrated
+                   ↓
+                 rejected
+```
+
+合法迁移由 CLI 或检查脚本验证，禁止直接把 `todo` 改成 `integrated`。
+
+### C · 持久化 Project State
+
+`.vibe/project.json` 保存：
+
+- 当前版本、当前 Phase / Milestone。
+- 默认分支、integration 分支策略。
+- Agent runtime 目录。
+- 调度拓扑。
+- 默认 deterministic checks。
+- protected scopes。
+- contract owner / freeze 状态。
+
+这不是替代 PRD。PRD 仍写"做什么和为什么"；`.vibe/project.json` 写"现在机器如何协作和验证"。
+
+### C · 调度拓扑
+
+v6 支持三种拓扑：
+
+- `solo`：一个 Agent 顺序执行，仍使用 `.vibe` 留状态。
+- `hub-and-spoke`：多个 Task Agent 并行，Integration Owner 汇合。
+- `pipeline`：需求/契约/实现/测试/安全/集成按阶段流转。
+
+调度拓扑不是越复杂越好。默认使用 `hub-and-spoke`，只有任务之间天然流水线化时才用 `pipeline`。
+
+### C · Contract Owner / Freeze
+
+契约是多 Agent 并行的同步点。v6 每个 contract 有 owner 和 freeze 状态：
+
+```json
+{
+  "id": "payment-webhook",
+  "owner": "integration",
+  "path": "packages/contracts/src/payment.ts",
+  "state": "frozen",
+  "breaking_change_requires": ["DECISIONS", "affected_tasks_review"]
+}
+```
+
+freeze 后，依赖该契约的任务可以并行；破坏性变更必须退回 contract review。
+
+### C · Handoff Packet
+
+handoff 不再只是文本，而是任务 JSON 的字段：
+
+```json
+{
+  "from": "codex-api-1",
+  "to": "integration",
+  "state": "review",
+  "summary": "实现 webhook 签名校验与幂等处理",
+  "changed_scope": ["apps/api/src/payments/**"],
+  "evidence": ["commit:abc123", "check:test:payments:passed"],
+  "known_risks": ["尚未用真实 Stripe CLI replay"],
+  "next_step": "Integration Owner 跑端到端 replay"
+}
+```
+
+### C · Integration / Merge Gate
+
+v6 的 gate 是 deterministic check，不靠口头 checklist：
+
+1. 任务状态必须是 `review`。
+2. `writable_scope` 覆盖所有 changed files。
+3. `protected_scope` 改动必须有 owner approval。
+4. 所有 `checks` 通过。
+5. 所有 `contract_refs` 不处于 broken / thawing。
+6. evidence 非空，并覆盖关键 checks。
+7. PRD / PLAN / CHANGELOG / DECISIONS 同步状态合法。
+
+### C · CLI 设计
+
+v6 推荐实现一个很薄的 `vibe` CLI：
+
+```text
+vibe status
+vibe claim M3-T4 --owner codex-api-1 --worktree ../wt/codex-api-1
+vibe start M3-T4
+vibe block M3-T4 --reason "等待支付价格拍板"
+vibe evidence add M3-T4 --type check --ref "test:payments:passed"
+vibe handoff M3-T4 --to integration --summary "..."
+vibe gate M3-T4
+vibe integrate M3-T4 --pr 42
+```
+
+CLI 的第一版只需要读写 JSON、检查状态迁移、验证 changed files 是否落在 writable scope 内。不要一开始就做复杂调度器。
+
+---
+
 ## 边界与原则
 
 - 这套提示词只提高模型写代码的**下限**（错误更少），不能逆天改命让 AI 无所不能；仍会出错，需要你判断。
@@ -1194,6 +1199,8 @@ gstack 的"铁律：未查清根因前不许改"，能挡住最浪费时间的�
 ```
 核心原则：里程碑 = 用户能完成的"垂直切片"（前端→API→逻辑→数据的最小可玩闭环），
           不是"一块技术"。分层只用于切片内部。← 这是防两张皮的根
+
+模板在 templates/，流程在 skills/（kof 开工 · prog 进度块 · close 收口门 · xreview 异构复核）+ agents/security-auditor
 
 阶段0 初始化  → 立 CLAUDE.md（项目宪法，含阶段6的12条护栏）
 阶段1 规划    → 出 PRD.md：功能（业务规则/数据契约）+ 产品（用户旅程/页面清单/交互四态/设计方向）
@@ -1220,6 +1227,8 @@ gstack 的"铁律：未查清根因前不许改"，能挡住最浪费时间的�
                 → 各里程碑照常循环 → Phase 总收口(跨里程碑E2E+子系统文档同步+归档)
                 收尾铁律：代码+PRD+CHANGELOG+DECISIONS 同批 commit；版本号跟半径走
 阶段5 评审    → 换模型审查（安全/数据/边界 + 产品体验：旅程连贯/四态完整），优化后再开发
+                5.1 xreview 复核门：命门 diff / 涉敏收口 / 上游产物送审；多方同报优先、独报先复现；
+                外发限制是硬约束（默认只发 diff · 凭证永不发 · 设计文档与口令权限类须授权并点名文件与接收方）
 阶段6 护栏    → 12 条实战规则（CI绿才合并/尾巴漏合/本地≠CI/PLAN护栏/接口隔离/批量飞命门慢/
                 合并前自审/伏笔管理/双轨并行·契约冻结后起跑/
                 静默失败·验结果不验调用/假绿治理·记过绿收口重验/教训复发≥2次改代码不改文档）
@@ -1234,6 +1243,8 @@ A7 机制化安全网(permissions样例/CI五件套·契约漂移闸门·并发�
 A8 支付集成检查单(webhook验签+幂等/fake双轨/测试配置封闭/实付E2E/退市兼容/账本对账)
 A9 生产数据批量操作检查单(dry-run全量/两段式+expected_count/判据同源/快照封条/定标先行)
 A10 外部服务与数据集接入检查单(错误语义三分/权威实测当裁判/链路先定性/LLM规则层为主)
+
+附录 C（实验 · 默认不启用）：.vibe/ 机器可读状态层 + vibe CLI 草案——未经真实项目验证
 
 附录 B（前端/浏览器细节，主流程已引用 B1/B2，【浏】=需浏览器工具）：
 B1 设计系统  B2 计划期设计评审  B3 视觉审计修复【浏】
