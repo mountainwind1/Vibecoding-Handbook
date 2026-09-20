@@ -1,14 +1,24 @@
-# CHANGELOG.md · 版本日志（模板 · 配套工作手册 v6）
+# CHANGELOG · Vibe Coding 正式项目工作手册
 
-> 只增不改，新条目加在顶部。PRD 是"当前真相"，历史变更全在这里。
-> 版本号 ↔ 里程碑映射：MVP 期每合并一个里程碑记一条 `0.{n}.0`（M0=0.1.0、M1=0.2.0…，由收口验收门任务追加）；
-> 正式上线 = `1.0.0`；上线后跟改动半径走（手册阶段 4.6）：微调 1.0.x / 常规改动 1.x.0 / 不兼容重大升级才 x.0.0。
-> **轻量模式**：条目由收口验收门顺手写、最少一行"新用户现在能完成什么"；不为版本号单独开决策——里程碑编号就是事实上的版本。
+> 手册仓库自己的版本史（只增不改，新条目在顶部）。给项目用的 CHANGELOG 模板在 [templates/CHANGELOG.md](templates/CHANGELOG.md)。
 
 ---
 
 ## [Unreleased]
-- {进行中、尚未发版的变更}
+> v7（破坏性 · 结构调整）在 main 上开发中，尚未发版。主题：**默认路径只留被真实项目验证过的机制**。
+### 破坏性变更（v7 批次 2 · 结构调整）
+- **`.vibe/` 机器状态层降为实验**：它设计于 v6，但没有任何真实项目用过，而"v6 模板 + v5.3 模式"跑完了 25+ 个里程碑——默认路径和被验证路径此前是反的。v7：多 Agent 协作协议（源自 v5.3，任务状态在人读的 PLAN.md）为默认；`.vibe/` 模板移到 `templates/.vibe/`，手册里整节移入**附录 C**（只移不删，99 行逐行一致），`VIBE-CLI.md` 标为设计草案。
+- **运行模式声明的方向翻转**：默认（PLAN 人读状态、无 `.vibe/`）不再需要声明；偏离默认（替换基准视口、挂起硬规则、启用 `.vibe/`）才声明。模板 `AGENTS.md` / `CLAUDE.md` / `ENGINEERING.md` / `PLAN.md` / `SELFCHECK.md` 同步。
+- **项目模板移入 `templates/`**：根目录不再有模板——它们曾被 Claude Code / Codex 当成本仓库的真指令加载（占位符 `{lint}`、"先读 `.vibe/project.json`"）。`CHANGELOG.md` 拆开：根目录 = 手册自己的版本史，`templates/CHANGELOG.md` = 项目模板。
+- **新建 v7 手册**（`Vibe-Coding-正式项目工作手册v7.md`），v6 手册冻结于 v6.2。迁移见 `MIGRATION-v6-to-v7.md`。
+### 新增（v7 批次 2）
+- 手册仓库自用的 `AGENTS.md` / `CLAUDE.md`（真规则，不再是模板）；自装 skill——`.claude/skills`、`.claude/agents`、`.agents/skills` 是指向 `skills/`、`agents/` 的符号链接，源只有一份。
+- `scripts/check.py` + GitHub Actions：本地与 CI 同一条命令——skill 脚本自检、Markdown 围栏成对、相对链接不断、SELFCHECK 段标齐全、根目录不得混进项目模板、自装 skill 必须是符号链接。
+- **新 CI 第一次运行就抓到一个真 bug**：`prog.sh` 的标题截断在 macOS（BWK awk，按字节）与 Linux（gawk 在 UTF-8 locale 下按字符）不一致——同一份 PLAN 在 Linux 上的输出长 3 倍，本地自检永远测不出。修法：awk 统一在 `LC_ALL=C` 下按字节处理。正是手册护栏 3"本地绿 ≠ CI 绿"的又一例，也是给一个文档仓库配 CI 值不值的答案。
+- PLAN 任务行两种写法都认可：复选框，或表格 `| M3-T4 | 内容 | ⬜ / ✅ |`（真实项目里两种都在用；`prog` 自 v6.2 起两种都认）。
+### 变更（v7 批次 2）
+- `SELFCHECK.md` → v7：R2.10 仅对启用 `.vibe/` 的项目适用；R5.* 去掉重复编号（门禁层 → R5.6，`.vibe` 状态门 → R5.7）。
+- README（中 / 英）：版本表增 v7 行、协作模型图去掉 `.vibe`、快速开始改为从 `templates/` 复制并安装 skill、设计原则改为"实证优先 / 人读文档是真相 / 自动化必须确定"；`VERSION-DIFF.md` 增 v6.1 / v6.2 / v7。
 ### 新增（v7 批次 3 · 多 Agent：异构复核门）
 - `skills/xreview`：把被评审的 diff 发给别家模型（Codex / DeepSeek / GLM）各出一份只读报告，主控合并裁决。`xreview.py` 只用标准库，带 `--dry-run` 与 `--selftest`。**外发规则机制化**：默认只发 diff；凭证文件永不外发 + gitleaks 扫内容（异常即拒发）；全局设计文档与名字涉及口令·权限的文件默认扣下，要发须 `--include-restricted --authorized … --authorized-for …`（授权点名接收方）；Codex 走权限档隔离且每次预检（正 / 负对照），DeepSeek / GLM 直连 HTTPS（域名白名单、不跟随重定向）；key 只从环境变量取。
 - 手册阶段 5 新增 5.1「`xreview` 复核门与多 Agent 的分工原则」：按独立性划分 Agent（执行者 / 独立验证者 / 只读调研者）、主控 = Integration Owner、复核门位置与强度、裁决规则（多方同报优先、独报先复现）、外发限制是硬约束、按难度派工为试验路径。
@@ -75,19 +85,3 @@
 - `PLAN.md` 任务模板新增状态、Owner、Worktree、Writable Scope、Evidence 字段。
 ### 兼容性
 - v5.2 单人工作流保持可用；v5.3 的多 Agent 字段可按需启用。
-
-## [{x.y.z}] - {YYYY-MM-DD}
-### 需求变更
-- {改了什么需求；对应 PRD 哪一节被更新}
-### 新增
-- {新功能/新里程碑交付；如 "M1：新用户可与 AI 对局并看到输赢"}
-### 修复
-- {bug 修复}
-### 受影响模块
-- {包/目录}
-### 技术要点
-- {关键实现/迁移/依赖变化；重大决策指向 D××}
-
-## [0.1.0] - {YYYY-MM-DD}
-### 新增
-- M0 工程地基：{仓库/CI/脚手架}

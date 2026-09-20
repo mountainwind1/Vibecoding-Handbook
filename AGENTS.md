@@ -1,100 +1,37 @@
-# AGENTS.md · 多 Agent 协作入口（模板 · 配套工作手册 v6）
+# AGENTS.md · Vibecoding-Handbook 仓库自用规则
 
-> Claude / Codex / 其他编程 Agent 进入项目时先读本文件，再读 ENGINEERING.md、PRD.md、PLAN.md。Claude Code 项目仍可保留 CLAUDE.md，但跨工具规则以本文件为准。
-> 加载方式：Codex 自动加载本文件（从仓库根到当前目录逐级拼接，**合计默认上限 32 KiB**，超出部分读不到——本文件保持精简，细节下沉 ENGINEERING.md）；Claude Code 只自动读 CLAUDE.md，由其中的 `@AGENTS.md` import 带入。
+> 这是**手册仓库自己**的工作规则（Codex 自动加载本文件；Claude Code 经 `CLAUDE.md` 里的 `@AGENTS.md` 加载）。
+> 给项目用的模板在 `templates/`——那里的文件含 `{占位}`，是要被复制走的产物，**不是**给你的指令。
 
-## 运行模式声明（先于一切规则）
+## 这个仓库是什么
 
-{示例：本项目运行在 Handbook v5.3 模式（见 DECISIONS D1）：不使用 `.vibe/`，SELFCHECK 中 R2.10 及 `.vibe` 相关断言不适用；布局断言基准视口为 1280px 桌面优先（见 D6）；i18n 条款已挂起（见 D××）。}
+一套面向 AI 编程 Agent 的正式项目工程方法：主手册（`Vibe-Coding-正式项目工作手册v*.md`）+ 项目模板（`templates/`）+ 可安装的 skill（`skills/`、`agents/`）。公开仓库，读者是别的项目。
 
-> 项目可以合法降级运行（v6 模板 + v5.3 模式）——实证：真实项目以此模式跑完 25 个里程碑。降级必须在此**显式声明并注明决策号**，让 SELFCHECK 与所有 Agent 有据可依：显式声明比每个会话口头解释便宜，也比默默不遵守诚实。未声明的豁免一律视为违规。
+| 路径 | 内容 | 注意 |
+|---|---|---|
+| `Vibe-Coding-正式项目工作手册v7.md` | 当前主手册 | v6 及更早的手册文件已冻结，不再改 |
+| `templates/` | 项目模板（AGENTS / CLAUDE / ENGINEERING / PLAN / PRD / …，以及可选的 `.vibe/`） | 改模板 = 改所有下游项目将来的起点 |
+| `skills/`、`agents/` | skill 与子代理的**唯一源**；`.claude/skills`、`.claude/agents`、`.agents/skills` 是指向它们的符号链接 | 不许另存一份 |
+| `docs/reviews/` | xreview 的真实评审报告（案例） | 外部模型的原文，不改 |
+| `scripts/check.py` | 本地与 CI 共用的自检 | 提交前必跑 |
 
-## 项目真相源
+## 硬规则
 
-- 产品真相：PRD.md
-- 当前任务真相：PLAN.md
-- 机器任务状态：.vibe/tasks/*.json
-- 项目协作状态：.vibe/project.json
-- 工程规则：ENGINEERING.md
-- 决策历史：DECISIONS.md
-- 视觉真相：DESIGN.md
-- 版本历史：CHANGELOG.md
-- 会话自查协议：SELFCHECK.md（配合上方模式声明的不适用注记）
-- 部署真相：DEPLOY.md（有生产环境后）
-- 运维真相：OPERATIONS.md（有生产环境后）
+1. **不直接 push main**：分支 → PR → 合并；合并由仓库所有者来点（或明确下令）。
+2. **提交前跑 `python3 scripts/check.py`**，全过才提交。它查：skill 脚本自检、Markdown 围栏成对、相对链接不断、SELFCHECK 段标齐全、根目录没有混进项目模板、自装 skill 是符号链接。
+3. **不提交密钥**；`xreview` 用到的 key 只存在于所有者的环境变量里——不读、不打印、不写入任何文件。
+4. **改结构化文档只增量编辑**：手册、模板、CHANGELOG 逐段改，不整文件重生成；批量替换用"断言恰好命中 1 次"的精确替换，不用盲正则。
+5. **脚本类 skill 必须带自检，且自检要先证明它能失败**：改守卫逻辑时做变异验证（先确认原版绿；崩溃 / 语法错不算红）。
 
-## Agent Ownership
+## 方法（这些教训都付过学费）
 
-- Product Owner：{人类 owner，负责拍板 PRD / 范围 / 取舍}
-- Integration Owner：{人类或指定 Agent，只负责集成、冲突、门禁，不承接普通功能任务}
-- Task Owner：每个任务只能有一个当前 owner；多人或多 Agent 并行时，必须先 claim 再动手。
-- 单人项目三者可兼任，但检查时分开问：我现在是在实现，还是在集成？
+- **改上游前先看下游**：所有者的真实项目里装着这些 skill 和模板的实例，常常已经演化得比上游好。动 `kof` / `PLAN` / `CLAUDE.md` 这类会被实例化的东西之前，先只读对比下游的实际版本；新脚本先拿真实文件跑。修改别的仓库必须先得到所有者同意。
+- **规则来自实证**：手册里的每条护栏都有出处（哪个项目、哪次事故）。没有在真实项目里验证过的机制，不进默认路径——`.vibe/` 就是反例（设计了、没人用过，v7 降为实验）。
+- **同一类问题第三次出现，改结构不改文档**（护栏 12）。
+- **工具事实以官方文档 + 实测为准**，不凭记忆、不信第三方文章；模型的自述不是证据。
+- **脚本要跨平台**：所有者用 macOS（bash 3.2、BWK awk），CI 与不少读者用 Linux（gawk / mawk）。shell / awk 脚本里涉及字符串长度、截断、排序的，一律固定 `LC_ALL=C`；本地自检过了不算，以 CI 为准（`prog.sh` 的截断曾在两边差 3 倍）。
+- **输出默认精简**：给人看的状态 / 报告只留做决定要用的信息，细节放开关后面。
 
-## Task Claim / State
+## 发版
 
-PLAN.md 中每个任务增加一行：
-
-```text
-状态：todo / claimed / in_progress / blocked / review / integrated
-Owner：{agent-id / 人名}
-Worktree：{路径或分支名}
-Writable Scope：{允许改的目录/文件}
-Evidence：{PR / commit / checks / screenshot / log}
-```
-
-v6 项目中，PLAN.md 保留人读叙事；机器状态以 `.vibe/tasks/{task-id}.json` 为准。两者冲突时，先停下，由 Integration Owner 修正。
-
-认领规则：
-
-- claim 前先拉取最新 main，并确认任务仍是 todo。
-- 把状态改为 claimed，填 Owner / Worktree / Writable Scope，单独提交或随任务首个提交提交。
-- 只写 Writable Scope；确需越界时先停下，在 PLAN.md 任务下追加 Scope Change 说明。
-- blocked 必须写明阻塞条件、已尝试证据、需要谁拍板。
-
-## Worktree Isolation
-
-- 每个并行 Agent 使用独立分支或 worktree。
-- 分支命名：`agent/{agent-id}/{task-id}-{slug}`。
-- 禁止两个 Agent 同时写同一文件，除非 Integration Owner 安排顺序合并。
-- 共享契约文件、schema、迁移、锁文件、设计 token、**生成文件（types.gen 类，只能经生成命令再生）**、**CI 配置**属高冲突区，默认只能由一个 owner 修改。
-
-## Integration Role / Gate
-
-Integration Owner 的职责：
-
-- 审查所有越界改动和共享契约改动。
-- 合并前确认任务状态、证据链、测试、CI、冲突解决记录完整。
-- 维护 integration 分支或 PR 队列。
-- 合并后把任务状态改为 integrated，并在 PLAN / CHANGELOG 留痕。
-
-合并门禁：
-
-- Writable Scope 无越界，或越界已获确认。
-- 四根命令绿：`{lint}` / `{typecheck}` / `{build}` / `{test}`。
-- 涉敏任务安全审计无高危。
-- 前端任务有布局断言或截图证据。
-- PR / commit / checks / 关键证据已写入 Evidence。
-
-## Handoff Packet
-
-Agent 结束任务或被打断时必须留下：
-
-```text
-Task：
-Owner：
-Branch/Worktree：
-Changed Scope：
-Current State：
-What changed：
-Evidence：
-Known risks：
-Next step：
-```
-
-v6 项目中，handoff packet 必须同时写入对应 task JSON 的 `handoff` 字段。
-
-## Skills 迁移建议
-
-- 高频角色提示词先沉淀为 `docs/skills/{skill-name}.md` 或工具原生 skill/command。
-- Skill 只放稳定流程，不放项目临时状态；临时状态仍写 PLAN / DECISIONS。
-- Skill 是跨工具格式（目录 + `SKILL.md`）：Claude Code 装在 `.claude/skills/`，Codex 装在 `.agents/skills/`；源文件只维护一份，禁止各改各的。跨工具共用的**规则**仍写在 AGENTS.md / ENGINEERING.md，skill 只放流程。
+CHANGELOG 的 `[Unreleased]` 定版 → README（中 / 英）最新版声明 → 在合并 commit 上打 annotated tag → GitHub release（标题沿用 `Vibe Coding Handbook vX · …`）。破坏性变更要有 `MIGRATION-*.md`。

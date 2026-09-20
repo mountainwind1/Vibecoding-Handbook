@@ -1,5 +1,5 @@
-⟦VC-SELFCHECK-v6-BEGIN⟧
-# SELFCHECK.md · 大模型自查手册（机读版 · 源自工作手册 v6）
+⟦VC-SELFCHECK-v7-BEGIN⟧
+# SELFCHECK.md · 大模型自查手册（机读版 · 源自工作手册 v7）
 
 ## ⟦M0⟧ 执行契约（读到本文件即生效，不可跳过）
 
@@ -9,7 +9,7 @@
    - 输出的每一条判定/建议必须引用规则 ID（如 R1.3、P3.G1）。无 ID 的判定视为臆造，不许输出。
    - 每次给出"可以合并 / 可以收口"结论前，重新对照相关规则 ID（R1.3、P3.5.G1）；若复述不出某个被引用 ID 的内容，说明上下文已丢失，立即重读本文件再继续。
    - 禁止用"一般最佳实践"替代本文件规则；冲突时以本文件与项目 CLAUDE.md 为准，两者再冲突以 CLAUDE.md 为准。
-3. 模式声明豁免：项目 CLAUDE.md / AGENTS.md 头部的「运行模式声明」可豁免特定断言（如 v5.3 模式豁免 R2.10 与 `.vibe` 相关断言；桌面优先项目把 P3.G1 的 375px 基准替换为声明视口）。豁免必须注明决策号（D××）；未声明的豁免视为违规。实证：真实项目以"v6 模板 + v5.3 模式声明"跑完 25 个里程碑。
+3. 模式声明：**默认模式 = 任务状态在 PLAN.md、不使用 `.vibe/`，无需声明。** 项目 AGENTS.md 头部的「运行模式声明」用来声明**偏离默认之处**（如桌面优先项目把 P3.G1 的 375px 基准替换为声明视口；经拍板挂起 R1.5；启用实验性 `.vibe/` → R2.10、R5.7 才适用）。偏离必须注明决策号（D××）；未声明的豁免视为违规。
 
 ## ⟦M1⟧ 阶段判定（依据仓库状态判断，不依赖用户口述）
 
@@ -51,7 +51,7 @@
 - R2.7 双轨并行：切片契约冻结后前后端两泳道可并行；后端先行上限 = 本切片 + 下一切片【设计无关】任务；绝不预做未来旅程的 API；里程碑完成 = 旅程走通；收口前必有"按旅程联调"任务。
 - R2.8 文档规模化：PLAN 只留当前里程碑（收口时归档进 PLAN-ARCHIVE）；DECISIONS 活跃卷只留索引 + 当前 Phase，满 Phase 归档 DECISIONS-ARCHIVE；子系统参考文档（{DOMAIN}.md）头部声明"代码为真相源"+ 最后同步戳，收口时同步；Phase 设计文档必须提交入库。
 - R2.9 多 Agent 适配：进入项目先读 AGENTS.md + ENGINEERING.md；任务动手前必须 claim；Owner / Worktree / Writable Scope / Evidence 必须写回 PLAN；越界改动先停下说明。
-- R2.10 v6 机器状态：进入项目必须读 `.vibe/project.json` 和当前 `.vibe/tasks/{task-id}.json`；PLAN 是人读叙事，task JSON 是机器状态；冲突时停下交给 Integration Owner 修正。
+- R2.10 （**仅**在 AGENTS.md 声明启用了实验性 `.vibe/` 的项目适用；默认不适用）进入项目读 `.vibe/project.json` 和当前 `.vibe/tasks/{task-id}.json`；task JSON 是机器状态，与 PLAN 冲突时停下交给 Integration Owner 修正。默认项目：任务状态以 PLAN.md 为准。
 
 ## ⟦M4⟧ 分档判定 R3.*
 
@@ -86,10 +86,10 @@
 - R5.1 文档层：七文件在位且各司其职；PRD = 当前真相不堆历史；PLAN 只装未做；DECISIONS/CHANGELOG 只增不改；契约唯一真相在 shared 包。
 - R5.2 git 层：一任务一 commit；无直推 main；无带红合并的 PR；上一里程碑全部 commit 已进 main。
 - R5.3 集成层：并行任务由 Integration Owner 汇合；共享契约、schema、迁移、锁文件、CI、设计 token 变更必须走 Integration Gate；证据链缺失不得合并。
-- R5.4 v6 deterministic gate：任务状态迁移必须合法；changed files 必须落在 writable_scope；protected scope 改动必须有 owner approval；checks/evidence/handoff 缺失不得 integrated。
-- R5.3 门禁层：每个已收口里程碑有 走查记录 / CHANGELOG 条目 / CI 绿证据；涉敏里程碑有 A5 留痕。
 - R5.4 机制层：permissions / pre-commit / CI 安全步骤实际配置，而非只写在文档里。
 - R5.5 产品层：提示用户亲自走旅程；此层不可由 AI 代替。
+- R5.6 门禁层：每个已收口里程碑有 走查记录 / CHANGELOG 条目 / CI 绿证据；涉敏里程碑有 A5 留痕。
+- R5.7 （仅启用了实验性 `.vibe/` 的项目）状态门：任务状态迁移必须合法；changed files 必须落在 writable_scope；protected scope 改动必须有 owner approval；checks/evidence/handoff 缺失不得 integrated。
 - 报告排序：违规（必须整改）> 缺失留痕（补记）> 建议；每条带证据（文件:行 / commit hash / PR 链接）+ 规则 ID。
 
 ## ⟦M7⟧ 补救速查（诊断 → 处方）
@@ -127,7 +127,7 @@
 ## ⟦M9⟧ 自查报告格式（执行自查时输出，缺项无效）
 
 ```
-[VC-SELFCHECK v6 已加载]
+[VC-SELFCHECK v7 已加载]
 1 阶段判定：P{x}（证据：…）
 2 硬规则体检：R1.1–R1.9 逐条 通过/违规/无法判定（违规附证据与处方）
 3 阶段门禁：P{x}.G 状态；发现的 P*.F 缺陷 → ⟦M7⟧ 处方

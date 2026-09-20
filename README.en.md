@@ -18,7 +18,7 @@
   <a href="https://github.com/mountainwind1/Vibecoding-Handbook/commits/main"><img src="https://img.shields.io/github/last-commit/mountainwind1/Vibecoding-Handbook" alt="Last commit"></a>
 </p>
 
-> Current release: **v6.2 · visible progress + auto-loop + closeout gate as a skill** (published as an addendum inside the v6 handbook): adds `prog` (a project progress block after every task), `close` (the milestone closeout gate) and the `security-auditor` subagent; `kof` gains the `/kof a` auto-loop and no longer stores project state; stale facts were corrected against Claude Code / Codex as of 2026-09 (`ultrathink`, hard-coded model names, `@AGENTS.md` import, commands → skills). Validated on a full real-project milestone before release. v6.1 was the field-retrospective addendum. v5.2 and v5.3 remain supported as lower-complexity paths; upgrading is optional. v6.1 also formalizes "v6 templates + a declared v5.3 mode" as a legitimate downgrade path, fully validated by a real 25-milestone project — see the retrospective in [examples/case-tidepoint.md](examples/case-tidepoint.md).
+> Current release: **v6.2 · visible progress + auto-loop + closeout gate as a skill** (published as an addendum inside the v6 handbook): adds `prog` (a project progress block after every task), `close` (the milestone closeout gate) and the `security-auditor` subagent; `kof` gains the `/kof a` auto-loop and no longer stores project state; stale facts were corrected against Claude Code / Codex as of 2026-09 (`ultrathink`, hard-coded model names, `@AGENTS.md` import, commands → skills). Validated on a full real-project milestone before release. v6.1 was the field-retrospective addendum. v5.2 and v5.3 remain supported as lower-complexity paths; upgrading is optional. v6.1 also formalizes "v6 templates + a declared v5.3 mode" as a legitimate downgrade path, fully validated by a real 25-milestone project — see the retrospective in [examples/case-tidepoint.md](examples/case-tidepoint.md). **v7 is in development on main (not yet released)**: the `xreview` cross-vendor review gate, `.vibe/` demoted to experimental, templates moved to `templates/`.
 
 ## What this is
 
@@ -39,15 +39,16 @@ It addresses four recurring failure modes:
 |---|---|---|---|
 | **v5.2 · Single-Agent Solid** | One developer and one Claude Code session on a long-running project | Human-readable documents | [Handbook](Vibe-Coding-正式项目工作手册v5.2.md) · [Release](https://github.com/mountainwind1/Vibecoding-Handbook/releases/tag/v5.2) |
 | **v5.3 · Multi-Agent Ready** | Multiple sessions or worktrees, including mixed Claude + Codex development | Human-readable task state in PLAN | [Handbook](Vibe-Coding-正式项目工作手册v5.3.md) · [Release](https://github.com/mountainwind1/Vibecoding-Handbook/releases/tag/v5.3) |
-| **v6 · Multi-Agent Native** | Long-running parallel work across agents and machines, with automation or scheduling | Machine-readable state under `.vibe/` | [Latest handbook](Vibe-Coding-正式项目工作手册v6.md) · [Release](https://github.com/mountainwind1/Vibecoding-Handbook/releases/tag/v6) |
+| **v7 · Field-Proven** (in development on main, not yet released) | The v5.3 collaboration protocol plus installable skills (kick-off / progress block / closeout gate / cross-vendor review); only field-validated mechanisms stay on the default path | Human-readable task state in PLAN (`.vibe/` demoted to experimental) | [Handbook](Vibe-Coding-正式项目工作手册v7.md) · [Upgrade from v6](MIGRATION-v6-to-v7.md) |
+| **v6 · Multi-Agent Native** (frozen at v6.2) | Projects that want to experiment with machine-readable task state | Machine-readable state under `.vibe/` (never validated on a real project) | [Handbook](Vibe-Coding-正式项目工作手册v6.md) · [Release](https://github.com/mountainwind1/Vibecoding-Handbook/releases/tag/v6) |
 
 See [VERSION-DIFF.md](VERSION-DIFF.md) for the full comparison.
 
-## The v6 collaboration model
+## The collaboration model
 
 ```mermaid
 flowchart LR
-    A["Project Truth<br/>PRD · PLAN · DECISIONS · .vibe"] --> B["Task Claim<br/>Owner · Scope · Worktree"]
+    A["Project Truth<br/>PRD · PLAN · DECISIONS"] --> B["Task Claim<br/>Owner · Scope · Worktree"]
     B --> C1["Claude Code"]
     B --> C2["Codex"]
     B --> C3["Other Agents"]
@@ -62,8 +63,8 @@ The central rule is simple: **agent runtime may change; project truth must remai
 
 ## Quick start
 
-1. Choose a version from the table above. Start with v5.2 for a single-developer project; adopt v5.3 or v6 when parallel work becomes real.
-2. Copy the matching templates into your project root. A v6 project should keep at least `AGENTS.md`, `ENGINEERING.md`, `.vibe/`, `PRD.md`, `PLAN.md`, `DECISIONS.md`, `CHANGELOG.md`, and `DESIGN.md`.
+1. Choose a version from the table above. New projects should use v7; the v5.2 / v5.3 handbooks remain readable on their own.
+2. Copy the templates from [templates/](templates/) into your project root — at least `AGENTS.md`, `ENGINEERING.md`, `CLAUDE.md`, `PRD.md`, `PLAN.md`, `DECISIONS.md`, `CHANGELOG.md`, and `DESIGN.md` — and replace the `{placeholders}`. Then install the directories under [skills/](skills/) as-is into your project's `.claude/skills/` (Codex: `.agents/skills/`), and [agents/security-auditor.md](agents/security-auditor.md) into `.claude/agents/`.
 3. Establish project rules and the security baseline in Phase 0, then create the PRD, design system, plan, and decision log.
 4. Give every task an Owner, state, worktree, writable scope, definition of done, and verification command. One task = one commit, with a progress block printed after every task. To run tasks back-to-back use the `/kof a` auto-loop: it stops only on its stop conditions (queue done, CI red, a decision is needed, critical task, milestone closeout) and never merges a PR by itself.
 5. Before merging, pass the user-journey review, deterministic checks, CI, and the integration gate. Record the resulting milestone and release.
@@ -71,7 +72,7 @@ The central rule is simple: **agent runtime may change; project truth must remai
 Use this as the opening instruction in a new session:
 
 ```text
-Read AGENTS.md, ENGINEERING.md, PRD.md, PLAN.md, DECISIONS.md, SELFCHECK.md, and .vibe/.
+Read AGENTS.md, ENGINEERING.md, PRD.md, PLAN.md, and DECISIONS.md.
 Confirm the current project truth, task owner, writable scope, and integration gate.
 Claim exactly one unowned task before starting work.
 ```
@@ -82,27 +83,29 @@ Claim exactly one unowned task before starting work.
 
 | File | Purpose |
 |---|---|
-| [Vibe-Coding-正式项目工作手册v6.md](Vibe-Coding-正式项目工作手册v6.md) | Complete v6 method and execution templates |
-| [VERSION-DIFF.md](VERSION-DIFF.md) | Selection boundaries for v5.2, v5.3, and v6 |
+| [Vibe-Coding-正式项目工作手册v7.md](Vibe-Coding-正式项目工作手册v7.md) | **Current handbook**: the complete method and execution templates |
+| [Vibe-Coding-正式项目工作手册v6.md](Vibe-Coding-正式项目工作手册v6.md) | The v6 handbook (frozen at v6.2) |
+| [MIGRATION-v6-to-v7.md](MIGRATION-v6-to-v7.md) | Upgrade from v6.x to v7: template paths, the flipped run-mode declaration, what to do with `.vibe/` |
+| [VERSION-DIFF.md](VERSION-DIFF.md) | Selection boundaries for v5.2, v5.3, v6, and v7 |
 | [MIGRATION-v5.2-to-v5.3.md](MIGRATION-v5.2-to-v5.3.md) | Upgrade from the stable single-agent workflow to Multi-Agent Ready |
 | [MIGRATION-v5.3-to-v6.md](MIGRATION-v5.3-to-v6.md) | Upgrade from human-readable task state to machine-readable state |
-| [VIBE-CLI.md](VIBE-CLI.md) | CLI design for v6 task state, deterministic checks, and integration gates |
+| [VIBE-CLI.md](VIBE-CLI.md) | Design draft of the CLI for `.vibe/` (experimental, not implemented) |
 
-### Project-truth templates
+### Project templates (all under `templates/`; copy them into your project root)
 
 | File | Purpose |
 |---|---|
-| [AGENTS.md](AGENTS.md) | Shared entry point for ownership, claims, scope, and handoff rules |
-| [ENGINEERING.md](ENGINEERING.md) | Vendor-neutral commands, contracts, CI, branching, and integration rules |
-| [CLAUDE.md](CLAUDE.md) | Claude Code adapter; cross-tool rules stay in the shared files above |
-| [PRD.md](PRD.md) | Business rules, user journeys, contract pointers, and acceptance criteria |
-| [PLAN.md](PLAN.md) | Current milestone, task boundaries, and closure gates |
-| [DECISIONS.md](DECISIONS.md) | Append-only architecture and product decision log |
-| [DESIGN.md](DESIGN.md) | Single source of truth for the frontend design system |
-| [CHANGELOG.md](CHANGELOG.md) | Release and milestone delivery history |
-| [SELFCHECK.md](SELFCHECK.md) | Machine-readable self-audit and anti-forgetting protocol for agents |
-| [DEPLOY.md](DEPLOY.md) | Deployment playbook: the checklist of defenses that fail silently when misconfigured, plus rollback-drill discipline |
-| [OPERATIONS.md](OPERATIONS.md) | Operations notes: runtime behavior you cannot see from the UI |
+| [templates/AGENTS.md](templates/AGENTS.md) | Shared entry point for ownership, claims, scope, and handoff rules |
+| [templates/ENGINEERING.md](templates/ENGINEERING.md) | Vendor-neutral commands, contracts, CI, branching, and integration rules |
+| [templates/CLAUDE.md](templates/CLAUDE.md) | Claude Code adapter; cross-tool rules stay in the shared files above |
+| [templates/PRD.md](templates/PRD.md) | Business rules, user journeys, contract pointers, and acceptance criteria |
+| [templates/PLAN.md](templates/PLAN.md) | Current milestone, task boundaries, and closure gates |
+| [templates/DECISIONS.md](templates/DECISIONS.md) | Append-only architecture and product decision log |
+| [templates/DESIGN.md](templates/DESIGN.md) | Single source of truth for the frontend design system |
+| [templates/CHANGELOG.md](templates/CHANGELOG.md) | Release and milestone delivery history |
+| [templates/SELFCHECK.md](templates/SELFCHECK.md) | Machine-readable self-audit and anti-forgetting protocol for agents |
+| [templates/DEPLOY.md](templates/DEPLOY.md) | Deployment playbook: the checklist of defenses that fail silently when misconfigured, plus rollback-drill discipline |
+| [templates/OPERATIONS.md](templates/OPERATIONS.md) | Operations notes: runtime behavior you cannot see from the UI |
 
 ### Standard Skill
 
@@ -116,22 +119,24 @@ Claim exactly one unowned task before starting work.
 
 Install: copy the directories under `skills/` **as-is** into your project's `.claude/skills/` (Codex: `.agents/skills/`), and `agents/security-auditor.md` into `.claude/agents/`. Skills hold no project state — root commands and business red lines live in the project's `ENGINEERING.md`; critical-task list, sensitive areas, local environment and traps live in the project's `CLAUDE.md` — so upgrading is a straight overwrite. Usage: `/kof` (resume), `/kof c` (reload after /clear), `/kof M3-T2` (explicit task), `/kof a` (auto-loop), `/prog` (progress), `/close` (closeout).
 
-### Multi-Agent Native
+### Experimental: the `.vibe/` machine-readable state layer (off by default)
 
-- `.vibe/project.json`: persistent project state and scheduling topology.
-- `.vibe/tasks/*.json`: executable tasks with owners, scope, dependencies, state, and evidence.
-- `.vibe/checks/default.json`: deterministic check definitions.
-- `.vibe/.schema/`: JSON Schemas for project and task state.
+Designed in v6 but never used by a real project. To use it, declare it explicitly in your project's `AGENTS.md` run-mode declaration (handbook Appendix C).
+
+- `templates/.vibe/project.json`: persistent project state and scheduling topology.
+- `templates/.vibe/tasks/*.json`: executable tasks with owners, scope, dependencies, state, and evidence.
+- `templates/.vibe/checks/default.json`: deterministic check definitions.
+- `templates/.vibe/.schema/`: JSON Schemas for project and task state.
 - `examples/`: task claims, worktrees, handoff packets, and evidence-chain examples.
 
 ## Design principles
 
 - **Project truth belongs in the repository.** It must not depend on one model, session, or developer's memory.
-- **Compatibility first.** v6 is an optional coordination layer; it does not invalidate the stable v5.2 workflow.
-- **Readable by humans and machines.** Markdown stays discussable, while `.vibe/` makes state validatable and schedulable.
+- **Field-proven first.** A mechanism that has not been validated on a real project does not go on the default path — `.vibe/` was designed but never used, so v7 demotes it to experimental; the `/kof a` auto-loop, by contrast, was back-ported from a real project.
+- **Human-readable documents are the truth.** State lives in PLAN.md; progress is computed from PLAN + git by a script, never stored a second time where it could drift.
 - **Integration is a role.** An implementation agent does not unilaterally declare a merge complete; the integration owner verifies cross-task behavior.
 - **Evidence before conclusions.** Commands, outputs, commits, pull requests, and journey records form the Evidence Chain.
-- **Automation must be deterministic.** The CLI manages state transitions and gates, not product judgment or design intent.
+- **Automation must be deterministic.** The progress block, the outbound guards and the repo self-check are computed by self-tested scripts (`prog.sh`, `xreview.py`, `scripts/check.py`), never paraphrased by a model; they do not replace product judgment or design intent.
 
 ## Limits
 

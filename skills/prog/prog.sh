@@ -8,7 +8,9 @@
 set -u
 
 plan_block() { # $1 = PLAN.md  $2 = full(0/1)
-  awk -v full="$2" '
+  # LC_ALL=C：各家 awk（macOS 的 BWK awk / Linux 的 gawk·mawk）一律按字节处理——否则 gawk 在 UTF-8 locale 下按字符数截断，
+  # 同一份 PLAN 在 Linux 上的输出会比 macOS 长 3 倍（首次 CI 抓到）。utrunc 自己会避开多字节字符的中间。
+  LC_ALL=C awk -v full="$2" '
   function trim(s){ sub(/^[ \t]+/,"",s); sub(/[ \t\r]+$/,"",s); return s }
   function utrunc(s,n,  c){            # 按字节截断但不切坏 UTF-8 字符
     if (length(s)<=n) return s

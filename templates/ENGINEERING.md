@@ -1,4 +1,4 @@
-# ENGINEERING.md · 工程规则（模板 · 配套工作手册 v6）
+# ENGINEERING.md · 工程规则（模板 · 配套工作手册 v7）
 
 > 本文件只写与具体 AI 供应商无关的工程事实。Claude、Codex、IDE Agent 都按这里执行。
 
@@ -54,7 +54,7 @@
 - 数据迁移、契约、锁文件变更已由 owner 复核。
 - CHANGELOG / DECISIONS / PRD / DESIGN 按需同步。
 
-v6 项目必须额外满足：
+启用了实验性 `.vibe/` 的项目（手册附录 C，须在 AGENTS.md 声明）额外满足：
 
 - `.vibe/tasks/{task-id}.json` 状态迁移合法。
 - changed files 全部落在 `writable_scope`，或 protected scope approval 已记录。
