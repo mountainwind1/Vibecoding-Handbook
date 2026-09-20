@@ -39,7 +39,10 @@ def split_diff(text):
     """git diff 文本 → [(path, hunk_text)]"""
     parts, cur, path = [], [], None
     for line in text.splitlines(keepends=True):
-        m = re.match(r"^diff --git a/(.*?) b/(.*?)\s*$", line)
+        m = re.match(r'^diff --git "?a/(.*?)"? "?b/(.*?)"?\s*$', line)
+        if line.startswith("diff --git") and (not m or "\\" in m.group(2)):
+            # 解析不了路径（多半是 git 把非 ASCII 文件名写成了八进制转义）→ 无法分类 → 失败即关
+            sys.exit(f"拒发：无法解析 diff 头里的路径：{line.strip()[:120]}（用 `git -c core.quotepath=false diff` 生成）")
         if m:
             if path is not None: parts.append((path, "".join(cur)))
             path, cur = m.group(2), [line]
@@ -154,7 +157,7 @@ def run(args):
             sys.exit(f"拒发：整份文件 `{args.payload}` 发给第三方需要用户授权——先问用户，再带 --authorized \"<授权记录>\"。")
         payload = open(args.payload, encoding="utf-8", errors="replace").read(); included, withheld = [args.payload], []
     else:
-        r = subprocess.run(["git", "diff", "--no-color", f"{args.base}...HEAD"], capture_output=True, text=True)
+        r = subprocess.run(["git", "-c", "core.quotepath=false", "diff", "--no-color", f"{args.base}...HEAD"], capture_output=True, text=True)
         if r.returncode != 0: sys.exit(f"git diff 失败：{r.stderr.strip()}")
         payload, included, withheld = build_payload(r.stdout, args.include, args.include_design, args.authorized, args.withhold, args.exclude)
     if not payload.strip(): sys.exit("评审包为空（diff 为空，或全部被扣下 / 排除）。")
@@ -212,6 +215,11 @@ def selftest():
     diff = d("src/a.py") + d("PRD.md") + d("tests/test_a.py")
     text, inc, wh = build_payload(diff, [], False, None)
     check("设计文档默认扣下", inc == ["src/a.py", "tests/test_a.py"] and wh == ["PRD.md"] and "new PRD.md" not in text and "new src/a.py" in text)
+    # 中文文件名：原样路径要能分类；八进制转义的路径无法分类 → 拒发（否则设计文档会混在上一个文件的 hunk 里溜出去）
+    text, inc, wh = build_payload(d("src/a.py") + d("doc/05_系统设计.md") + d("src/数据.py"), [], False, None)
+    check("中文设计文档被扣下", wh == ["doc/05_系统设计.md"] and inc == ["src/a.py", "src/数据.py"] and "系统设计" not in text)
+    quoted = d("src/a.py") + 'diff --git "a/\\347\\263\\273\\347\\273\\237.md" "b/\\347\\263\\273\\347\\273\\237.md"\n+机密设计\n'
+    must_exit("八进制转义路径", lambda: build_payload(quoted, [], False, None), "无法解析")
     must_exit("--include-design 无授权", lambda: build_payload(diff, [], True, None), "需要用户授权")
     text, inc, wh = build_payload(diff, [], True, "用户 2026-09-20 同意：PRD 给 codex")
     check("授权后设计文档进包", "PRD.md" in inc and "new PRD.md" in text)
