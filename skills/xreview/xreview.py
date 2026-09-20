@@ -168,7 +168,7 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 
 def review_http(vendor, prompt, payload_text, timeout=600, _test_url=None):
     cfg = HTTP_VENDORS[vendor]; up = vendor.upper()
-    key = next((os.environ[k] for k in cfg["keys"] if os.environ.get(k)), None)
+    key = next((os.environ[k].strip() for k in cfg["keys"] if os.environ.get(k, "").strip()), None)   # 去掉误带的首尾空白
     if not key: return None, f"环境变量 {' / '.join(cfg['keys'])} 未设置，跳过（key 只从环境变量取）"
     url = _test_url or os.environ.get(f"XREVIEW_{up}_URL", cfg["url"]); model = os.environ.get(f"XREVIEW_{up}_MODEL", cfg["model"])
     u = urllib.parse.urlparse(url)
