@@ -9,6 +9,11 @@
 
 ## [Unreleased]
 - {进行中、尚未发版的变更}
+### 新增（v7 批次 3 · 多 Agent：异构复核门）
+- `skills/xreview`：把被评审的 diff 发给别家模型（Codex / DeepSeek / GLM）各出一份只读报告，主控合并裁决。`xreview.py` 只用标准库，带 `--dry-run` 与 `--selftest`。**外发规则机制化**：默认只发 diff；凭证文件永不外发 + gitleaks 扫内容（异常即拒发）；全局设计文档与名字涉及口令·权限的文件默认扣下，要发须 `--include-restricted --authorized … --authorized-for …`（授权点名接收方）；Codex 走权限档隔离且每次预检（正 / 负对照），DeepSeek / GLM 直连 HTTPS（域名白名单、不跟随重定向）；key 只从环境变量取。
+- 手册阶段 5 新增 5.1「`xreview` 复核门与多 Agent 的分工原则」：按独立性划分 Agent（执行者 / 独立验证者 / 只读调研者）、主控 = Integration Owner、复核门位置与强度、裁决规则（多方同报优先、独报先复现）、外发限制是硬约束、按难度派工为试验路径。
+- `ENGINEERING.md` 模板新增「外发限制」节；`close` 第 4 步可叠加 `xreview`；`kof` 的"找另一个模型讨论"指向 `xreview` 的外发规则；模型档映射表增「异构评审方」行。
+- `docs/reviews/`：`xreview` 的头三轮真实运行都是审它自己——Codex（隔离环境）7 条、DeepSeek 两轮共 11 条、GLM 11 条，逐条先复现再修。多方同报：授权没绑定到具体文件、检查与打开之间的窗口、报告目录豁免过宽。GLM 独报的一条最狠：`str.splitlines` 认 `\x0c` 等非 git 行界，可伪造 diff 文件头让被扣下的 PRD 内容挂在别的文件名下发出去（复现成立）。解析 diff 文本这一处至此出了第 4 个绕过 → 按护栏 12 改结构：**不再解析 diff 文本**，文件清单取自 `git diff --name-status -z`、补丁按文件单取。另：Codex 进程清掉别家 key、预检加第二个负对照、git 输出严格 UTF-8、gitleaks 在评审包目录里跑、报告文件名校验、HTTP 改流式（GLM 长思考曾被断连）并各家并行。22 种实现变异均能让自检变红。
 
 ## [v6.2] - 2026-09-19
 > 两个来源：① 对照 2026-09 的 Claude Code / Codex 修正过时事实；② 多个真实项目实跑的反馈（进度黑箱、不停点"下一步"）。发版前在 TideAnywhere 跑完一个完整里程碑（M12：立项 → `/kof a` → `close` 八步 → 0.14.0），期间的试用反馈已并入本版。
