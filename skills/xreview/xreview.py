@@ -13,6 +13,7 @@
 
 只用标准库。用法见 --help；自检：xreview.py --selftest
 """
+from concurrent.futures import ThreadPoolExecutor
 import argparse, datetime, fnmatch, hashlib, json, os, re, shutil, subprocess, sys, tempfile, urllib.parse, urllib.request
 
 # ---- 路径分类 ---------------------------------------------------------------
@@ -242,11 +243,14 @@ def run(args):
         prompt = PROMPT.format(focus=(f"本次请重点看：{args.focus}" if args.focus else ""))
         probe = args.probe or next((os.path.abspath(p) for p in subprocess.run(["git", "ls-files"], capture_output=True, text=True).stdout.splitlines() if os.path.isfile(p)), None)
         os.makedirs(args.out, exist_ok=True); date = datetime.date.today().strftime("%Y%m%d"); done = 0
-        for rv in args.reviewers.split(","):
-            rv = rv.strip()
-            if rv == "codex": text, info = review_codex(pdir, prompt, probe)
-            elif rv in HTTP_VENDORS: text, info = review_http(rv, prompt, payload)
-            else: text, info = None, "未知评审方"
+        def one(rv):
+            if rv == "codex": return (rv, *review_codex(pdir, prompt, probe))
+            if rv in HTTP_VENDORS: return (rv, *review_http(rv, prompt, payload))
+            return (rv, None, "未知评审方")
+        rvs = [x.strip() for x in args.reviewers.split(",") if x.strip()]
+        with ThreadPoolExecutor(max_workers=max(1, len(rvs))) as ex:      # 各家并行：总耗时 = 最慢的一家，而不是相加
+            results = list(ex.map(one, rvs))
+        for rv, text, info in results:
             if text is None: print(f"跳过     {rv}：{info}"); continue
             path = os.path.join(args.out, f"{args.task}_{rv}_{date}.md")
             with open(path, "w", encoding="utf-8") as fh:
