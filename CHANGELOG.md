@@ -5,23 +5,27 @@
 ---
 
 ## [Unreleased]
-> v7（破坏性 · 结构调整）在 main 上开发中，尚未发版。主题：**默认路径只留被真实项目验证过的机制**。
-### 破坏性变更（v7 批次 2 · 结构调整）
+
+## [v7] - 2026-09-20
+> **破坏性 · 结构调整。** 主题：**默认路径只留被真实项目验证过的机制**（Field-Proven）。三块：`.vibe/` 降为实验并翻转默认、`xreview` 异构模型复核门（外发限制机制化）、项目模板移入 `templates/` + 手册仓库自用规则与 CI。v6 手册冻结于 v6.2；升级见 `MIGRATION-v6-to-v7.md`。发版前 `xreview` 已在真实项目的一个涉敏里程碑上试用。
+### 破坏性变更（结构调整）
 - **`.vibe/` 机器状态层降为实验**：它设计于 v6，但没有任何真实项目用过，而"v6 模板 + v5.3 模式"跑完了 25+ 个里程碑——默认路径和被验证路径此前是反的。v7：多 Agent 协作协议（源自 v5.3，任务状态在人读的 PLAN.md）为默认；`.vibe/` 模板移到 `templates/.vibe/`，手册里整节移入**附录 C**（只移不删，99 行逐行一致），`VIBE-CLI.md` 标为设计草案。
 - **运行模式声明的方向翻转**：默认（PLAN 人读状态、无 `.vibe/`）不再需要声明；偏离默认（替换基准视口、挂起硬规则、启用 `.vibe/`）才声明。模板 `AGENTS.md` / `CLAUDE.md` / `ENGINEERING.md` / `PLAN.md` / `SELFCHECK.md` 同步。
 - **项目模板移入 `templates/`**：根目录不再有模板——它们曾被 Claude Code / Codex 当成本仓库的真指令加载（占位符 `{lint}`、"先读 `.vibe/project.json`"）。`CHANGELOG.md` 拆开：根目录 = 手册自己的版本史，`templates/CHANGELOG.md` = 项目模板。
 - **新建 v7 手册**（`Vibe-Coding-正式项目工作手册v7.md`），v6 手册冻结于 v6.2。迁移见 `MIGRATION-v6-to-v7.md`。
-### 新增（v7 批次 2）
+### 新增（仓库与模板）
 - 手册仓库自用的 `AGENTS.md` / `CLAUDE.md`（真规则，不再是模板）；自装 skill——`.claude/skills`、`.claude/agents`、`.agents/skills` 是指向 `skills/`、`agents/` 的符号链接，源只有一份。
 - `scripts/check.py` + GitHub Actions：本地与 CI 同一条命令——skill 脚本自检、Markdown 围栏成对、相对链接不断、SELFCHECK 段标齐全、根目录不得混进项目模板、自装 skill 必须是符号链接。
 - **新 CI 第一次运行就抓到一个真 bug**：`prog.sh` 的标题截断在 macOS（BWK awk，按字节）与 Linux（gawk 在 UTF-8 locale 下按字符）不一致——同一份 PLAN 在 Linux 上的输出长 3 倍，本地自检永远测不出。修法：awk 统一在 `LC_ALL=C` 下按字节处理。正是手册护栏 3"本地绿 ≠ CI 绿"的又一例，也是给一个文档仓库配 CI 值不值的答案。
 - PLAN 任务行两种写法都认可：复选框，或表格 `| M3-T4 | 内容 | ⬜ / ✅ |`（真实项目里两种都在用；`prog` 自 v6.2 起两种都认）。
-### 变更（v7 批次 2）
+### 变更
 - `SELFCHECK.md` → v7：R2.10 仅对启用 `.vibe/` 的项目适用；R5.* 去掉重复编号（门禁层 → R5.6，`.vibe` 状态门 → R5.7）。
 - README（中 / 英）：版本表增 v7 行、协作模型图去掉 `.vibe`、快速开始改为从 `templates/` 复制并安装 skill、设计原则改为"实证优先 / 人读文档是真相 / 自动化必须确定"；`VERSION-DIFF.md` 增 v6.1 / v6.2 / v7。
-### 新增（v7 批次 3 · 多 Agent：异构复核门）
+### 新增（多 Agent：`xreview` 异构复核门）
 - `skills/xreview`：把被评审的 diff 发给别家模型（Codex / DeepSeek / GLM）各出一份只读报告，主控合并裁决。`xreview.py` 只用标准库，带 `--dry-run` 与 `--selftest`。**外发规则机制化**：默认只发 diff；凭证文件永不外发 + gitleaks 扫内容（异常即拒发）；全局设计文档与名字涉及口令·权限的文件默认扣下，要发须 `--include-restricted --authorized … --authorized-for …`（授权点名接收方）；Codex 走权限档隔离且每次预检（正 / 负对照），DeepSeek / GLM 直连 HTTPS（域名白名单、不跟随重定向）；key 只从环境变量取。
 - 手册阶段 5 新增 5.1「`xreview` 复核门与多 Agent 的分工原则」：按独立性划分 Agent（执行者 / 独立验证者 / 只读调研者）、主控 = Integration Owner、复核门位置与强度、裁决规则（多方同报优先、独报先复现）、外发限制是硬约束、按难度派工为试验路径。
+- **发版前的真实项目试用**（一个涉敏里程碑的 diff，19 个文件约 71KB，只发 Codex，2 分钟）：6 条发现逐条核实——排第一的"高危"实测不成立、排第二的"高危"成立、其余 4 条成立但严重度偏低；需授权的 13 个文件被自动扣下。试用还确认了一个边界：仓库位于系统临时目录时 Codex 隔离预检会拒跑（正确行为，已写进 SKILL.md）。
+- `prog.sh` 自检改用绝对路径调用自己（`bash prog.sh` 不带路径时原先会 command not found）。
 - `ENGINEERING.md` 模板新增「外发限制」节；`close` 第 4 步可叠加 `xreview`；`kof` 的"找另一个模型讨论"指向 `xreview` 的外发规则；模型档映射表增「异构评审方」行。
 - `docs/reviews/`：`xreview` 的头三轮真实运行都是审它自己——Codex（隔离环境）7 条、DeepSeek 两轮共 11 条、GLM 11 条，逐条先复现再修。多方同报：授权没绑定到具体文件、检查与打开之间的窗口、报告目录豁免过宽。GLM 独报的一条最狠：`str.splitlines` 认 `\x0c` 等非 git 行界，可伪造 diff 文件头让被扣下的 PRD 内容挂在别的文件名下发出去（复现成立）。解析 diff 文本这一处至此出了第 4 个绕过 → 按护栏 12 改结构：**不再解析 diff 文本**，文件清单取自 `git diff --name-status -z`、补丁按文件单取。另：Codex 进程清掉别家 key、预检加第二个负对照、git 输出严格 UTF-8、gitleaks 在评审包目录里跑、报告文件名校验、HTTP 改流式（GLM 长思考曾被断连）并各家并行。22 种实现变异均能让自检变红。
 
