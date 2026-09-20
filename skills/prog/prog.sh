@@ -159,6 +159,8 @@ health_line() {
 }
 
 selftest() {
+  # 用 bash 显式调用自己的绝对路径：`bash prog.sh`（$0 不带路径）或脚本没有执行位时，直接 "$0" 会 command not found
+  SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
   tmp=$(mktemp -d) || exit 1; trap 'rm -rf "$tmp"' EXIT
   cat > "$tmp/PLAN.md" <<'EOF'
 **当前里程碑：M3**
@@ -200,10 +202,10 @@ selftest() {
 ## Multi-agent notes
 - [ ] 不是里程碑，不计入
 EOF
-  out=$(PROG_NO_GH=1 "$0" --full "$tmp/PLAN.md") || { echo "selftest FAIL: 非零退出"; echo "$out"; exit 1; }
+  out=$(PROG_NO_GH=1 bash "$SELF" --full "$tmp/PLAN.md") || { echo "selftest FAIL: 非零退出"; echo "$out"; exit 1; }
   fail=0
   # 默认精简输出：只有 项目 / 当前 / 下一步 / 待处理
-  outc=$(PROG_NO_GH=1 "$0" "$tmp/PLAN.md")
+  outc=$(PROG_NO_GH=1 bash "$SELF" "$tmp/PLAN.md")
   for want in "3/6 个里程碑已收口（总体 60%）" "当前     M3「用户可导入 CSV 并看到点位【涉敏】」 3/5 个任务" "下一步   M3-T4a1" "① T3 偏差：>50MB 文件未测" "② T4a1 待拍板：重复点合并策略"; do
     printf '%s' "$outc" | grep -qF -- "$want" || { echo "selftest FAIL(精简): 缺少「$want」"; fail=1; }
   done
@@ -213,9 +215,9 @@ EOF
   [ "$(printf '%s\n' "$outc" | wc -l | tr -d ' ')" -le 5 ] || { echo "selftest FAIL(精简): 行数超过 5"; fail=1; }
   # 归档后 PLAN 不再留已完成里程碑的标题：总体进度要从「已完成里程碑：」一行里数
   printf '已完成里程碑：M0、M1（见 ARCHIVE）\n## M2 · 戊\n- [x] **M2-T1 · a**\n- [ ] **M2-T2 · b**\n## M3 · 己（占位）\n' > "$tmp/P6.md"
-  PROG_NO_GH=1 "$0" "$tmp/P6.md" | grep -qF -- "2/4 个里程碑已收口（总体 62%）" || { echo "selftest FAIL(总体进度·列表写法)"; fail=1; }
+  PROG_NO_GH=1 bash "$SELF" "$tmp/P6.md" | grep -qF -- "2/4 个里程碑已收口（总体 62%）" || { echo "selftest FAIL(总体进度·列表写法)"; fail=1; }
   printf '已完成里程碑：M0–M3（任务见 PLAN-ARCHIVE.md）。\n## M4 · 庚\n- [ ] **M4-T1 · a**\n' > "$tmp/P7.md"
-  PROG_NO_GH=1 "$0" "$tmp/P7.md" | grep -qF -- "4/5 个里程碑已收口（总体 80%）" || { echo "selftest FAIL(总体进度·范围写法)"; fail=1; }
+  PROG_NO_GH=1 bash "$SELF" "$tmp/P7.md" | grep -qF -- "4/5 个里程碑已收口（总体 80%）" || { echo "selftest FAIL(总体进度·范围写法)"; fail=1; }
   for want in "M3「用户可导入 CSV 并看到点位【涉敏】」" "3/5 个任务" "已收口 3 · 进行中 2 · 任务全勾待收口 0 · 未开 1" "收口必须过独立 A5 审计" "最近勾选 M3-T3" "下一步   M3-T4a1" "卡在你这里：先处理下面的「待拍板」" "① T3 偏差：>50MB 文件未测" "② T4a1 待拍板：重复点合并策略" "距收口   T4a1 → T5" "其他在途 M-PRE1 1/2" "已收口里程碑下还有 1 项未勾：EXT-1（M1）"; do
     printf '%s' "$out" | grep -qF -- "$want" || { echo "selftest FAIL: 缺少「$want」"; fail=1; }
   done
@@ -225,23 +227,23 @@ EOF
   # 试用反馈（TideAnywhere M12）：长「待拍板」不许截断；长标题截描述保标注；卡在待拍板时提示要准
   long="D55 五项（a 低-2 做法：设界 A / 逐站流式 B；b 三个上限数值 64 KiB / 16 MiB / 1 GiB；c 批次内符号链接一律拒；d 规则版本升 v5；e 旧批次不重判）结尾标记ZZ"
   printf '## M9 · 长文本\n- [ ] **M9-T1 · 批次读取设界 + 先判目录后读 + 符号链接一律拒 + 规则版本升级以及其他很长很长的描述文字用来触发截断** —【常规】【单独+确认】（动受保护文件）状态：todo\n  待拍板：%s\n' "$long" > "$tmp/P4.md"
-  out4=$(PROG_NO_GH=1 "$0" "$tmp/P4.md")
+  out4=$(PROG_NO_GH=1 bash "$SELF" "$tmp/P4.md")
   printf '  偏差：%s\n' "$long" >> "$tmp/P4.md"
-  out4=$(PROG_NO_GH=1 "$0" "$tmp/P4.md")
+  out4=$(PROG_NO_GH=1 bash "$SELF" "$tmp/P4.md")
   [ "$(printf '%s' "$out4" | grep -c '结尾标记ZZ')" = "1" ] || { echo "selftest FAIL(试用反馈): 精简模式下长「偏差」应截成一行、长「待拍板」应保留全文"; fail=1; }
-  [ "$(PROG_NO_GH=1 "$0" --full "$tmp/P4.md" | grep -c '结尾标记ZZ')" = "2" ] || { echo "selftest FAIL(试用反馈): --full 下偏差应为全文"; fail=1; }
+  [ "$(PROG_NO_GH=1 bash "$SELF" --full "$tmp/P4.md" | grep -c '结尾标记ZZ')" = "2" ] || { echo "selftest FAIL(试用反馈): --full 下偏差应为全文"; fail=1; }
   for want in "结尾标记ZZ" "【常规】【单独+确认】" "卡在你这里：先处理下面的「待拍板」"; do
     printf '%s' "$out4" | grep -qF -- "$want" || { echo "selftest FAIL(试用反馈): 缺少「$want」"; fail=1; }
   done
   # 下一个任务是命门、且没有待拍板 → 命门提示
   printf '## M6 · 丁\n- [ ] **M6-T1 · 鉴权** —【重型】【单独+确认】（命门）\n' > "$tmp/P5.md"
-  PROG_NO_GH=1 "$0" "$tmp/P5.md" | grep -qF -- "命门：做完会停下等你核验" || { echo "selftest FAIL(命门提示)"; fail=1; }
+  PROG_NO_GH=1 bash "$SELF" "$tmp/P5.md" | grep -qF -- "命门：做完会停下等你核验" || { echo "selftest FAIL(命门提示)"; fail=1; }
   # 下一个任务是收口任务 → 提示需要用户到场
   printf '## M5 · 丙\n- [x] **M5-T1 · 做了**\n- [ ] **M5-T2 · 收口：部署与实机走查**\n' > "$tmp/P3.md"
-  PROG_NO_GH=1 "$0" "$tmp/P3.md" | grep -qF -- "收口门：走 close，需要你到场" || { echo "selftest FAIL(收口提示)"; fail=1; }
+  PROG_NO_GH=1 bash "$SELF" "$tmp/P3.md" | grep -qF -- "收口门：走 close，需要你到场" || { echo "selftest FAIL(收口提示)"; fail=1; }
   # 全部收口的 PLAN：不应把已收口里程碑当成当前里程碑
   printf '## M1 · 甲 ✅\n- [ ] **EXT-9 · 欠账**\n## M2 · 乙 —— 已收口\n' > "$tmp/P2.md"
-  out2=$(PROG_NO_GH=1 "$0" --full "$tmp/P2.md")
+  out2=$(PROG_NO_GH=1 bash "$SELF" --full "$tmp/P2.md")
   for want in "2/2 个里程碑已收口（总体 100%）" "没有进行中的里程碑" "已收口 2 · 进行中 0" "还有 1 项未勾：EXT-9（M1）"; do
     printf '%s' "$out2" | grep -qF -- "$want" || { echo "selftest FAIL(全收口): 缺少「$want」"; fail=1; }
   done
