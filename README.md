@@ -114,6 +114,7 @@ flowchart LR
 | [skills/prog](skills/prog/SKILL.md) | 只读项目进度块，默认只有三段：**进度**（项目总体 + 当前里程碑 n/m）/ **下一步**（要不要人到场）/ **待处理**（「待拍板 / 偏差」）；`--full` 追加距收口、其他在途、挂账、git 与 CI 健康——由脚本从 PLAN + git + gh 现算，也可不经 AI 直接跑 `prog.sh` |
 | [skills/close](skills/close/SKILL.md) | 里程碑收口验收门：0–7 步逐步出证据（历史断言重跑、旅程走查、独立 A5、归档、PR/CI、合并后核对） |
 | [skills/xreview](skills/xreview/SKILL.md) | 异构模型复核门：把 diff 发给 Codex / DeepSeek / GLM 各出一份只读报告，主控合并裁决（多方同报优先、独报先复现）。外发规则机制化：默认只发 diff、凭证永不发、设计文档与口令·权限类文件须用户授权并点名接收方、评审方拿不到仓库 |
+| [skills/map](skills/map/SKILL.md) | **试验中。** 项目地图：业务流程上的模块、当前在哪一步、每个模块的页面 / 接口 / 数据情况、问题挂在哪、精力花在哪（模块 × 里程碑投入热力图）——脚本从 PLAN + `ENGINEERING.md`「模块地图」+ git 现算；装了 [archify](https://github.com/tt-a1i/archify) 另出交互架构图；`--publish` 执行项目自配的发布命令 |
 | [agents/security-auditor](agents/security-auditor.md) | A5 安全审计的子代理定义：上下文隔离、四类高危模式、三段式报告、原手法复验整条攻击链 |
 
 安装：把 `skills/` 下的目录**原样**复制到项目的 `.claude/skills/`（Codex：`.agents/skills/`），`agents/security-auditor.md` 复制到 `.claude/agents/`。skill 里不放项目状态——根命令与业务红线写在项目的 `ENGINEERING.md`，命门 / 涉敏点 / 本机环境 / 踩过的坑写在项目的 `CLAUDE.md`，所以手册升级时直接覆盖即可。用法：`/kof`（续接）、`/kof c`（/clear 后重载）、`/kof M3-T2`（指定任务）、`/kof a`（自动循环）、`/prog`（看进度）、`/close`（收口）。

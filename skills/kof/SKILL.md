@@ -120,6 +120,7 @@ gh run list --branch main --limit 1   # main CI 状态（红着不准起跑）
 - PLAN / PRD / DECISIONS **只增量编辑，永不重生成**；改完 `git diff` 核对 checkbox 数量与结构未被破坏。
 - 分支命名 `agent/{agent-id}/{task-id}-{slug}`；**禁止直推 main**（纯文档改动同样走分支 → PR）。
 - 禁止提交密钥、`.env`、生成物。
+- 装了 `map` skill 的项目：静默刷新项目地图（`python3 <map 目录>/map.py --quiet`，地图里配了「发布：」就加 `--publish`），成功时没有输出，不贴进对话。
 - **最后输出进度块**：按 `prog` skill 跑脚本、原样贴出。这是每个任务收尾的固定最后一步，不省略。
 
 ### 第五步 · 里程碑收口（仅收口任务）
