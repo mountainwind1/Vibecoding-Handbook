@@ -1,0 +1,23 @@
+#!/bin/sh
+# vibe-map 发布接收端（vibe-deploy 的 SSH 强制命令）：只认「项目名」一个参数，
+# 装法：放到 /usr/local/bin/，vibe-deploy 的 authorized_keys 写 command="/usr/local/bin/vibe-map-receive",restrict <公钥>
+# 从标准输入收 tar 包，解到临时目录、丢掉符号链接、原子替换 /srv/vibe-map/<项目名>/
+set -eu
+p="${SSH_ORIGINAL_COMMAND:-}"
+case "$p" in
+  ''|.*|*/*|*[!A-Za-z0-9._-]*) echo "vibe-map: 项目名不合法：$p" >&2; exit 2 ;;
+esac
+[ "${#p}" -le 64 ] || { echo "vibe-map: 项目名太长" >&2; exit 2; }
+root="${VIBE_MAP_ROOT:-/srv/vibe-map}"      # 自检时换成临时目录
+tmp=$(mktemp -d "$root/.incoming.XXXXXX")
+trap 'rm -rf "$tmp"' EXIT
+tar -C "$tmp" --no-same-owner --no-same-permissions -xf -
+find "$tmp" -type l -delete
+chmod -R u=rwX,go=rX "$tmp"
+[ -f "$tmp/index.html" ] || { echo "vibe-map: 包里没有 index.html" >&2; exit 3; }
+old="$root/.old.$p.$$"
+if [ -e "$root/$p" ]; then mv "$root/$p" "$old"; fi
+mv "$tmp" "$root/$p"
+trap - EXIT
+rm -rf "$old"
+echo "vibe-map: 已更新 $p"

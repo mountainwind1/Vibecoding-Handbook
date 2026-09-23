@@ -622,7 +622,22 @@ def selftest():
         check("发布到要登录的地址 → 放行", publish_with(f"发布：echo Deployed {base_url}/login {{dir}}") == "ok")
         srv.shutdown()
         open(os.path.join(repo, "ENGINEERING.md"), "w", encoding="utf-8").write(eng)
-        # 7 没有地图也能跑（按目录分组）
+        # 7 服务器接收端（server/vibe-map-receive）：名字守卫、没有 index.html 不替换、丢符号链接
+        recv = os.path.join(os.path.dirname(os.path.abspath(__file__)), "server", "vibe-map-receive")
+        site = os.path.join(tmp, "site"); os.makedirs(site)
+        pkg = os.path.join(tmp, "pkg"); os.makedirs(pkg)
+        open(os.path.join(pkg, "index.html"), "w").write("v1")
+        os.symlink("/etc/passwd", os.path.join(pkg, "leak"))
+        def receive(name, src):
+            tarball = subprocess.run(["tar", "-C", src, "-cf", "-", "."], capture_output=True, check=True).stdout
+            return subprocess.run(["sh", recv], input=tarball, capture_output=True, env=dict(os.environ, VIBE_MAP_ROOT=site, SSH_ORIGINAL_COMMAND=name)).returncode
+        check("接收端：合法项目名收下", receive("Demo", pkg) == 0 and open(os.path.join(site, "Demo", "index.html")).read() == "v1")
+        check("接收端：包里的符号链接被丢掉", not os.path.lexists(os.path.join(site, "Demo", "leak")))
+        check("接收端：跳目录 / 带斜杠 / 隐藏名 / 夹带命令 一律拒", all(receive(n, pkg) == 2 for n in ("../x", "a/b", ".x", "id; cat /etc/passwd", "")))
+        empty = os.path.join(tmp, "empty"); os.makedirs(empty)
+        check("接收端：没有 index.html 拒收，旧内容不动", receive("Demo", empty) == 3 and open(os.path.join(site, "Demo", "index.html")).read() == "v1")
+        check("接收端：没有留下临时目录", not [n for n in os.listdir(site) if n.startswith(".")])
+        # 8 没有地图也能跑（按目录分组）
         d2 = build(repo, "", plan)
         check(f"无地图：按目录分组：{sorted(m['name'] for m in d2['modules'])}", {"ingest", "api", "static"} <= {m["name"] for m in d2["modules"]} and not d2["mapped"])
     if fails:

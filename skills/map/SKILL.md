@@ -27,37 +27,37 @@ description: 项目地图（只读，试验中）——把业务流程上的模�
 
 托管不绑定任何一家 agent 工具：「模块地图」里写一行 `发布：<命令>`（`{dir}` = 产物目录），`map.py --publish` 执行它——普通 shell 命令，任何 agent 或 CI 都能跑。页面里有安全欠账原文，**只发到要登录才能看的地方**。每次发布后脚本会像匿名浏览器一样打开发布出去的网址（跟随跳转、不带登录）：能看到地图就**响亮地失败**（退出码非 0），提示先收紧访问控制。
 
-**有自己的服务器：用它**（数据不出自己的机器，也不用再开账号）。产物是纯静态文件、不向任何第三方发请求，任何 Web 服务器都能放：
+**有自己的服务器：用它**（2026-09-23 在一台阿里云 ECS + Docker 里的 Caddy 上实测：发布一条命令约 8 秒，发布后自查报 401）。数据不出自己的机器，服务器也不用装 rsync：
 
-1. **HTTPS 是前提**：口令认证（basic auth）走明文 HTTP 等于把口令公开。Caddy 自动签证书最省事；已经有 nginx 就加一段 location。
-2. **访问控制二选一**：① 口令（basic auth，手机浏览器会弹登录框、能记住）；② 只在 Tailscale / VPN 内网监听，公网根本到不了（手机要装客户端）。
-3. **单独的发布账号**，只给 `/srv/vibe-map` 的写权限；本机和 CI 用 SSH 密钥发布。
+1. **发布账号**（root 做一次）：建 `vibe-deploy`（锁口令），`/srv/vibe-map` 归它；把 `server/vibe-map-receive` 装到 `/usr/local/bin/`；它的 `authorized_keys` 只放一行 `command="/usr/local/bin/vibe-map-receive",restrict <发布公钥>`。这把钥匙只能往 `/srv/vibe-map/<项目名>/` 送 tar 包——跑命令、跳目录、开 shell、转发端口实测都被拒；包里没有 `index.html` 不替换；符号链接丢掉；替换是原子的。
+2. **发布钥匙**（本机）：`ssh-keygen -t ed25519 -N "" -f ~/.ssh/vibe_map_deploy`，只给公钥，私钥不离开本机。
+3. **口令**：把 `server/vibe-map-set-password` 装到服务器，**用户自己**运行 `ssh -t root@<服务器> vibe-map-set-password`——口令只在用户终端里输、不回显、只存 bcrypt 哈希，agent 不经手。以后改口令再跑一遍。
+4. **Web 服务器**（Caddy：HTTPS 自动签发）。Caddy 在 Docker 里就给容器加两个只读挂载：`/srv/vibe-map:/srv/vibe-map:ro`、`/srv/vibe-map-auth:/etc/caddy/vibe-map-auth:ro`。**先在一次性容器里 `caddy validate` 新配置**，再重建容器——同机其他站点会断一两秒（实测 1.4 秒），证书在 data 卷里不会重签。
 
    ```
-   # Caddy（Caddyfile）：口令哈希用 caddy hash-password 生成
    map.example.com {
        root * /srv/vibe-map
        basic_auth {
-           you <口令哈希>
+           import /etc/caddy/vibe-map-auth/users
        }
-       header X-Robots-Tag "noindex, nofollow"
        file_server
-   }
-
-   # nginx：口令文件用 htpasswd -c /etc/nginx/vibe-map.htpasswd you 生成
-   location /vibe-map/ {
-       alias /srv/vibe-map/;
-       auth_basic "vibe-map";
-       auth_basic_user_file /etc/nginx/vibe-map.htpasswd;
-       add_header X-Robots-Tag "noindex, nofollow";
+       header {
+           Strict-Transport-Security "max-age=31536000"
+           X-Content-Type-Options "nosniff"
+           X-Frame-Options "SAMEORIGIN"
+           Referrer-Policy "no-referrer"
+           X-Robots-Tag "noindex, nofollow"
+           Cache-Control "no-cache"
+       }
    }
    ```
 
-4. 地图里的发布行，**末尾 echo 网址**，发布后的自查才有地址可查（不登录应得到 401）：
-   `发布：rsync -az --delete {dir}/ deploy@你的服务器:/srv/vibe-map/<项目名>/ && echo https://map.example.com/<项目名>/`
-   只在内网监听时**不要** echo 网址：自查从你自己的机器发起，本来就在内网里，会误报"公开可读"。
+   `X-Frame-Options` 必须是 `SAMEORIGIN` 不能是 `DENY`：线路图页签用 iframe 内嵌 archify 图。nginx 同理（`alias` + `auth_basic`），未实测。
+5. **发布行**，末尾 echo 网址，发布后的自查才有地址可查（不登录应得到 401）：
+   `发布：COPYFILE_DISABLE=1 tar --no-xattrs -C {dir} -cf - . | ssh -i ~/.ssh/vibe_map_deploy -o IdentitiesOnly=yes -o BatchMode=yes vibe-deploy@<服务器> <项目名> && echo https://map.example.com/<项目名>/`
+   （`COPYFILE_DISABLE` 与 `--no-xattrs`：macOS 的 tar 否则会夹带 `._*` 文件和扩展属性。）只在 Tailscale / VPN 内网监听时**不要** echo 网址：自查从本机发起，本来就在内网里，会误报"公开可读"。
 
-服务器在中国大陆、用域名走 80 / 443 端口要先完成 ICP 备案；不想备案就走内网方案，或用境外服务器。
+服务器在中国大陆、用域名走 80 / 443 要先完成 ICP 备案（子域名在主域名的备案内）。
 
 **没有服务器：Cloudflare Workers 静态资源 + Cloudflare Access**（2026-09 按官方文档核实，尚未在真实项目实测）：Access 免费版 50 人，手机浏览器可用，发布是一条命令。一次性配置由用户本人做（涉及开账号、登记付款方式，agent 不代做）：
 
@@ -103,4 +103,4 @@ description: 项目地图（只读，试验中）——把业务流程上的模�
 
 ## 验证
 
-- `python3 map.py --selftest` 输出 `selftest ok`：临时仓库夹具覆盖 PLAN 读法（子段、表格行、缩进子项、EXT- 版本号）并**与 `prog.sh` 交叉核对同一份 PLAN**、问题定位的四级规则与"同名文件不瞎定"、数据文件不算投入、当前位置、archify 的硬上限（源码证据 ≤ 3、章节 ≤ 5、标题 ≤ 48、说明 ≤ 140、网格不重格）、问题原文里的 `</script>` 不炸页面、发布命令的 `{dir}` 替换、发布后的公开可读自查（本地起服务器：公开页面、跳转后落到公开页面都要失败，登录页放行）、没有地图时按目录分组。改守卫逻辑时先确认原版绿，再逐条拿掉守卫看对应断言变红（崩溃不算红）。
+- `python3 map.py --selftest` 输出 `selftest ok`：临时仓库夹具覆盖 PLAN 读法（子段、表格行、缩进子项、EXT- 版本号）并**与 `prog.sh` 交叉核对同一份 PLAN**、问题定位的四级规则与"同名文件不瞎定"、数据文件不算投入、当前位置、archify 的硬上限（源码证据 ≤ 3、章节 ≤ 5、标题 ≤ 48、说明 ≤ 140、网格不重格）、问题原文里的 `</script>` 不炸页面、发布命令的 `{dir}` 替换、发布后的公开可读自查（本地起服务器：公开页面、跳转后落到公开页面都要失败，登录页放行）、服务器接收端 `server/vibe-map-receive` 的守卫（非法项目名、没有 index.html、符号链接）、没有地图时按目录分组。改守卫逻辑时先确认原版绿，再逐条拿掉守卫看对应断言变红（崩溃不算红）。
