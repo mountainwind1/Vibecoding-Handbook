@@ -15,7 +15,7 @@
     | 导入 | 接口 | src/x/ingest/*cli.py |        层 = 页面/接口/数据/逻辑/测试/外部/关键词；路径是 glob（* 可跨目录），首条命中为准
     发布：<命令，{dir} = 产物目录>                  可选：--publish 时执行（云端托管由项目自己定，任何工具都能跑）
 """
-import argparse, collections, datetime, fnmatch, json, os, re, shlex, shutil, subprocess, sys, tempfile
+import argparse, collections, datetime, fnmatch, json, os, re, shlex, subprocess, sys, tempfile, urllib.error, urllib.request
 
 LAYERS = ["页面", "接口", "数据", "逻辑"]            # 卡片上显示的层；测试只计入投入
 MS_RE = re.compile(r"^## (?:[^M]*[:：] *)?(M[-A-Za-z0-9.]*[0-9][A-Za-z0-9]*)\s*[·:：]?\s*(.*)$")   # 同 prog：只认二级标题
@@ -31,6 +31,7 @@ FILE_TOK = re.compile(r"[A-Za-z0-9_./-]*[A-Za-z0-9_-]\.(?:py|pyi|tsx?|jsx?|mjs|v
 NOT_EFFORT = re.compile(r"\.(json|geojson|csv|tsv|log|txt|lock|sum|svg|snap|parquet|xml|map)$|(^|/)(uv|package-lock|yarn|pnpm-lock|poetry|Cargo)\.", re.I)
 CATEGORY = {"SEC": "安全", "EXT": "外部依赖"}
 RANK = {"待拍板": 4, "安全": 3, "偏差": 2, "欠账": 2, "外部依赖": 1}
+PAGE_MARK = "<!-- vibe-map-page -->"                            # 发布后自查：不登录能取到带这个标记的页面 = 访问控制没生效
 LEGEND = {"frontend": "页面为主", "backend": "逻辑 / 接口为主", "database": "数据为主", "cloud": "部署 / 基建",
           "security": "鉴权 / 安全", "external": "跨仓库"}      # 类型是按文件分层推出来的，图例照实说
 
@@ -436,6 +437,18 @@ def render_page(data):
     return tpl.replace("__TITLE__", data["project"] + " 项目地图").replace("__DATA__", json.dumps(data, ensure_ascii=False).replace("</", "<\\/"))
 
 
+def publicly_readable(url):
+    """像匿名浏览器一样取发布出去的网址（跟随跳转、不带登录）：最后拿到的是地图页面 → True；
+    拿到的是登录页或 401 / 403 → False；连不上 → None。"""
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "vibe-map-check"}), timeout=10) as r:
+            return r.status == 200 and PAGE_MARK in r.read(3_000_000).decode("utf-8", "replace")
+    except urllib.error.HTTPError:
+        return False
+    except Exception:
+        return None
+
+
 def read_map(repo, path=None):
     if path:
         return open(path, encoding="utf-8").read()
@@ -476,7 +489,15 @@ def run(repo, out, map_path=None, use_archify=True, publish=False, quiet=False):
         r = subprocess.run(cmd, shell=True, cwd=repo, capture_output=True, text=True)
         if r.returncode != 0:
             sys.exit(f"map：发布失败（exit {r.returncode}）：{(r.stderr or r.stdout)[-600:]}")
-        say(f"已发布：{(r.stdout.strip().splitlines() or [''])[-1][:200]}")
+        urls = list(dict.fromkeys(u.rstrip(".,;") for u in re.findall(r"https?://[^\s'\"<>()]+", r.stdout + r.stderr)))[:8]
+        seen = {u: publicly_readable(u) for u in urls}
+        exposed = [u for u, v in seen.items() if v]
+        if exposed:                                                # 页面里有安全欠账原文：公开可读必须响亮地失败
+            sys.exit(f"map：发布出去的页面不用登录就能打开：{exposed[0]}——页面里有安全欠账原文，立刻收紧访问控制（如 Cloudflare Access），再重新发布")
+        if any(v is False for v in seen.values()):
+            say(f"已发布；不登录访问被拒，访问控制生效：{next(u for u, v in seen.items() if v is False)}")
+        else:
+            say("已发布；没法自动确认访问控制（输出里没有网址或连不上）——请用无痕窗口打开一次，应该先看到登录页")
     return data
 
 
@@ -572,7 +593,35 @@ def selftest():
         page = open(os.path.join(out, "index.html"), encoding="utf-8").read()
         check("问题原文里的 </script> 被转义", "</script><b>" not in page and "<\\/script>" in page)
         check("发布命令执行了（{dir} 换成产物目录）", os.path.exists(os.path.join(tmp, "pub", "index.html")))
-        # 6 没有地图也能跑（按目录分组）
+        # 6 发布后的公开可读自查
+        import http.server, threading
+        class H(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                if self.path.startswith("/open"):
+                    self.send_response(200); self.end_headers(); self.wfile.write(page.encode("utf-8"))
+                elif self.path.startswith("/signin"):
+                    self.send_response(200); self.end_headers(); self.wfile.write("请先登录".encode("utf-8"))
+                else:                                            # /moved → 公开页面；/login → 登录页
+                    self.send_response(301 if self.path.startswith("/moved") else 302)
+                    self.send_header("Location", "/open" if self.path.startswith("/moved") else "/signin"); self.end_headers()
+            def log_message(self, *a):
+                pass
+        srv = http.server.HTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        base_url = f"http://127.0.0.1:{srv.server_address[1]}"
+        eng = open(os.path.join(repo, "ENGINEERING.md"), encoding="utf-8").read()
+        def publish_with(line):
+            open(os.path.join(repo, "ENGINEERING.md"), "w", encoding="utf-8").write(re.sub(r"(?m)^发布：.*$", line, eng))
+            try:
+                run(repo, out, use_archify=False, publish=True, quiet=True); return "ok"
+            except SystemExit as e:
+                return str(e)
+        check("发布到公开可读的地址 → 响亮地失败", "不用登录就能打开" in publish_with(f"发布：echo Deployed {base_url}/open {{dir}}"))
+        check("跳转之后落到公开页面 → 也算公开（http→https 这类跳转）", "不用登录就能打开" in publish_with(f"发布：echo Deployed {base_url}/moved {{dir}}"))
+        check("发布到要登录的地址 → 放行", publish_with(f"发布：echo Deployed {base_url}/login {{dir}}") == "ok")
+        srv.shutdown()
+        open(os.path.join(repo, "ENGINEERING.md"), "w", encoding="utf-8").write(eng)
+        # 7 没有地图也能跑（按目录分组）
         d2 = build(repo, "", plan)
         check(f"无地图：按目录分组：{sorted(m['name'] for m in d2['modules'])}", {"ingest", "api", "static"} <= {m["name"] for m in d2["modules"]} and not d2["mapped"])
     if fails:
