@@ -34,6 +34,7 @@ button{font:inherit;color:inherit}
 /* 顶部：阶段 */
 .eyebrow{font-size:12px;color:var(--muted);letter-spacing:.02em;display:flex;flex-wrap:wrap;gap:4px 14px}
 .eyebrow .mono{font-size:11.5px}
+.eyebrow a{color:var(--accent);text-decoration:none}
 h1{font-size:26px;font-weight:650;letter-spacing:.01em;margin:6px 0 16px}
 h1 small{font-size:14px;font-weight:500;color:var(--muted);margin-left:10px;letter-spacing:.04em}
 .stage{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:var(--r);overflow:hidden}
@@ -97,6 +98,38 @@ h1 small{font-size:14px;font-weight:500;color:var(--muted);margin-left:10px;lett
 .cross .card{background:var(--surface)}
 .note{font-size:12.5px;color:var(--muted);background:var(--sunk);border-radius:8px;padding:9px 12px;margin:0 0 16px}
 
+/* 进展 */
+.focus{background:var(--surface);border:1px solid var(--rule);border-radius:var(--r);padding:18px 20px;display:flex;flex-direction:column;gap:10px;max-width:980px}
+.f-kicker{font-size:12px;color:var(--muted);letter-spacing:.08em}
+.f-title{font-size:20px;font-weight:650;line-height:1.35}
+.f-title .id,.ns-title .id{color:var(--accent);font-family:var(--mono);font-weight:600;margin-right:8px}
+.f-meta{font-size:12.5px;color:var(--muted)}
+.steps{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.steps li{font-family:var(--mono);font-size:12px;padding:3px 8px;border-radius:6px;background:var(--sunk);color:var(--faint);white-space:nowrap}
+.steps li.done{color:var(--ok);background:transparent;border:1px solid var(--rule)}
+.steps li.cur{background:var(--accent);color:var(--on-accent);font-weight:600}
+.steps li.ext{border:1px dashed var(--ext);background:transparent;color:var(--ext)}
+.now-step{border-left:4px solid var(--accent);padding:8px 12px;background:var(--accent-soft);border-radius:0 8px 8px 0;margin-top:6px}
+.ns-label{font-size:12px;color:var(--muted);letter-spacing:.06em}
+.ns-title{font-size:16px;font-weight:600;margin-top:2px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.focus h3{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.06em;margin-top:8px}
+.probs,.progress{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.prob{display:grid;grid-template-columns:4.2em 1fr;gap:8px;align-items:start;font-size:13px}
+.prob .chip{justify-self:start}
+.rest{font-size:12.5px;color:var(--muted)}
+.rest summary{cursor:pointer;color:var(--accent);margin:2px 0 8px}
+.prob .pt{display:flex;flex-wrap:wrap;gap:4px 8px;min-width:0}
+.prob .px{flex-basis:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.prob .id{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.here-tag{font-size:11px;color:var(--accent);border:1px solid currentColor;border-radius:999px;padding:0 6px}
+.prob.none{color:var(--ok)}
+.progress li{display:grid;grid-template-columns:auto auto 1fr;gap:8px;font-size:12.5px;align-items:baseline}
+.progress .id{font-family:var(--mono);color:var(--muted)}
+.progress .when{color:var(--faint);white-space:nowrap}
+.progress .subj{overflow-wrap:anywhere}
+.status{font-size:12.5px;color:var(--muted);margin:2px 0 0}
+.status span{color:var(--faint)}
+
 /* 详情 */
 iframe.archify{display:block;width:100%;height:min(82vh,960px);border:1px solid var(--rule);border-radius:var(--r);background:var(--surface)}
 .legend a{color:var(--accent);margin-left:auto}
@@ -151,15 +184,16 @@ table.heat{border-collapse:collapse;font-size:12px;min-width:100%}
   <header>
     <div class="eyebrow" id="eyebrow"></div>
     <h1 id="h1"></h1>
-    <div class="stage" id="stage"></div>
   </header>
   <nav class="tabs" role="tablist" aria-label="视图">
-    <button role="tab" id="tab-map" aria-selected="true" aria-controls="view-map">线路图</button>
+    <button role="tab" id="tab-now" aria-selected="true" aria-controls="view-now">进展</button>
+    <button role="tab" id="tab-map" aria-selected="false" aria-controls="view-map">模块图</button>
     <button role="tab" id="tab-cards" aria-selected="false" aria-controls="view-cards" hidden>模块</button>
     <button role="tab" id="tab-issues" aria-selected="false" aria-controls="view-issues">问题<span class="n" id="n-issues"></span></button>
     <button role="tab" id="tab-effort" aria-selected="false" aria-controls="view-effort">投入分布</button>
   </nav>
-  <section id="view-map" role="tabpanel" aria-labelledby="tab-map"></section>
+  <section id="view-now" role="tabpanel" aria-labelledby="tab-now"></section>
+  <section id="view-map" role="tabpanel" aria-labelledby="tab-map" hidden></section>
   <section id="view-cards" role="tabpanel" aria-labelledby="tab-cards" hidden></section>
   <section id="view-issues" role="tabpanel" aria-labelledby="tab-issues" hidden></section>
   <section id="view-effort" role="tabpanel" aria-labelledby="tab-effort" hidden></section>
@@ -184,21 +218,45 @@ let selected = null;
 
 function header() {
   document.getElementById("eyebrow").innerHTML =
-    `<span>项目地图 · 生成于 ${esc(D.generated)}</span><span class="mono">${esc(D.branch)} @ ${esc(D.head)}</span>`;
+    `<a href="../index.html">← 全部项目</a><span>生成于 ${esc(D.generated)}</span><span class="mono">${esc(D.branch)} @ ${esc(D.head)}</span>`;
   document.getElementById("h1").innerHTML = `${esc(D.project)}<small>${D.mapped ? "" : "未配模块地图 · 按目录分组"}</small>`;
-  const c = D.current, n = D.next, p = D.progress;
-  document.getElementById("stage").innerHTML = `
-    <div class="stat"><span class="k">当前阶段</span>
-      <span class="v">${c ? `<span class="id">${esc(c.id)}</span>${esc(c.name)}` : "没有进行中的里程碑"}</span>
-      ${c ? `<span class="sub"><span class="meter"><i style="width:${c.total ? 100 * c.done / c.total : 0}%"></i></span><span class="num">${c.done}/${c.total}</span> 个任务</span>` : ""}</div>
-    <div class="stat"><span class="k">下一步</span>
-      <span class="v">${n ? `<span class="id">${esc(n.id)}</span>${esc(n.title)}` : "—"}</span>
-      ${n && n.gate ? `<span class="sub"><span class="tag gate">需要你到场</span></span>` : ""}</div>
-    <div class="stat"><span class="k">等你拍板</span><span class="big ${D.waiting ? "alert" : ""}">${D.waiting}</span>
-      <span class="sub">${D.waiting ? "先处理这些，下一步才走得动" : "没有卡在你这里的事"}</span></div>
-    <div class="stat"><span class="k">里程碑</span><span class="big">${p.closed}<span style="color:var(--faint)">/${p.total}</span></span>
-      <span class="sub">已收口</span></div>`;
   document.getElementById("n-issues").textContent = D.issues.length;
+}
+
+const ago = t => { const s = Date.now() / 1000 - t; return s < 90 ? "刚刚" : s < 3600 ? Math.round(s / 60) + " 分钟前" : s < 86400 ? Math.round(s / 3600) + " 小时前" : Math.round(s / 86400) + " 天前"; };
+const PTONE = k => k === "待拍板" || k === "CI" ? "crit" : k === "偏差" || k === "安全" || k === "欠账" ? "warn" : "ext";
+function viewNow() {
+  const N = D.now, m = N.milestone, st = N.step;
+  const short = id => m && id.startsWith(m.id + "-") ? id.slice(m.id.length + 1) : id;
+  // 先看会卡住下一步的：这一步的问题、所有待拍板、CI；其余（别的任务上的偏差、外部等待）折叠
+  const main = N.state === "active" ? N.problems.filter(p => p.here || p.kind === "待拍板" || p.kind === "CI") : N.problems;
+  const rest = N.state === "active" ? N.problems.filter(p => !main.includes(p)) : [];
+  const probs = main.length ? main.map(p => `
+      <li class="prob"><span class="chip ${PTONE(p.kind)}">${esc(p.kind)}</span>
+        <span class="pt">${p.task ? `<span class="id">${esc(p.task)}</span>` : ""}${p.here ? `<span class="here-tag">这一步</span>` : ""}<span class="px" title="${esc(p.text)}">${esc(p.text)}</span></span></li>`).join("")
+    : `<li class="prob none">${N.state === "active" ? "这一步没有卡住的事" : "没有挂着的问题"}</li>`;
+  const restHtml = rest.length ? `<details class="rest"><summary>本里程碑其他问题 ${rest.length} 条（别的任务上的偏差到收口裁决；外部等待）</summary><ul class="probs">${rest.map(p => `
+      <li class="prob"><span class="chip ${PTONE(p.kind)}">${esc(p.kind)}</span><span class="pt">${p.task ? `<span class="id">${esc(p.task)}</span>` : ""}<span class="px" title="${esc(p.text)}">${esc(p.text)}</span></span></li>`).join("")}</ul></details>` : "";
+  const prog = N.progress.map(c => `<li><span class="id">${esc(c.sha)}</span><span class="when">${ago(c.t)}</span><span class="subj">${esc(c.subject)}</span></li>`).join("");
+  const head = N.state === "active" ? `
+      <div class="f-kicker">正在做</div>
+      <h2 class="f-title"><span class="id">${esc(m.id)}</span>${esc(m.name)}</h2>
+      <div class="f-meta">完成 <b class="num">${m.done}/${m.total}</b></div>
+      <ol class="steps" aria-label="步骤">${N.steps.map(s => `<li class="${s.done ? "done" : ""} ${s.current ? "cur" : ""} ${s.external ? "ext" : ""}" title="${esc(s.id + " " + s.title)}">${s.done ? "✓ " : s.current ? "▶ " : ""}${esc(short(s.id))}</li>`).join("")}</ol>
+      <div class="now-step">
+        <div class="ns-label">${st ? `当前这一步 · 第 ${st.index}/${st.total} 步` : "当前这一步"}</div>
+        <div class="ns-title">${st ? `<span class="id">${esc(st.id)}</span>${esc(st.title)}${st.gate ? `<span class="tag gate">需要你到场</span>` : ""}` : "任务都勾完了，等收口（走 close）"}</div>
+      </div>` : `
+      <div class="f-kicker">当前没有正在开发的功能</div>
+      <h2 class="f-title">${m ? `上一个：<span class="id">${esc(m.id)}</span>${esc(m.name)}` : "还没有里程碑"}</h2>
+      ${m && m.note ? `<div class="f-meta">${esc(m.note)}</div>` : ""}
+      <div class="now-step"><div class="ns-label">下一步</div><div class="ns-title">立项下一个里程碑<span class="tag gate">要你拍板方向</span></div></div>
+      ${N.status ? `<p class="status"><span>PLAN 里的当前状态：</span>${esc(N.status)}</p>` : ""}`;
+  document.getElementById("view-now").innerHTML = `
+    <section class="focus">${head}
+      <h3>${N.state === "active" ? "这一步的问题" : "还挂着"}</h3><ul class="probs">${probs}</ul>${restHtml}
+      <h3>最近进展</h3><ul class="progress">${prog || "<li>还没有提交</li>"}</ul>
+    </section>`;
 }
 
 function issuesOf(m) {
@@ -328,7 +386,7 @@ function viewEffort() {
     <p class="fine">单位：改动行数（增 + 删，不含合并提交），含测试与文档，只用来比相对大小。按提交说明里的里程碑编号归列，没有编号的记入「其他」；文件按模块地图归行，首条命中为准。</p>`;
 }
 
-const TABS = D.archify ? ["map", "cards", "issues", "effort"] : ["map", "issues", "effort"];
+const TABS = D.archify ? ["now", "map", "cards", "issues", "effort"] : ["now", "map", "issues", "effort"];
 document.getElementById("tab-cards").hidden = !D.archify;
 function show(t) {
   TABS.forEach(x => {
@@ -338,8 +396,8 @@ function show(t) {
   try { localStorage.setItem("panel-tab", t); } catch (e) {}
 }
 TABS.forEach(t => document.getElementById("tab-" + t).addEventListener("click", () => { show(t); history.replaceState(null, "", "#" + t); }));
-header(); if (D.archify) viewArchify(); viewMap(); viewIssues(); viewEffort();
+header(); viewNow(); if (D.archify) viewArchify(); viewMap(); viewIssues(); viewEffort();
 let start = location.hash.slice(1);
 if (!TABS.includes(start)) { try { start = localStorage.getItem("panel-tab"); } catch (e) {} }
-show(TABS.includes(start) ? start : "map");
+show(TABS.includes(start) ? start : "now");
 </script>

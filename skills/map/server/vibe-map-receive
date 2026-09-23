@@ -20,4 +20,8 @@ if [ -e "$root/$p" ]; then mv "$root/$p" "$old"; fi
 mv "$tmp" "$root/$p"
 trap - EXIT
 rm -rf "$old"
+# 总入口：包里带的 portal.html 装成站点根的 index.html；projects.json 列出有摘要的项目（名字都过了上面的守卫，可直接拼 JSON）
+if [ -f "$root/$p/portal.html" ]; then cp "$root/$p/portal.html" "$root/.index.tmp" && chmod 644 "$root/.index.tmp" && mv "$root/.index.tmp" "$root/index.html"; fi
+{ printf '['; sep=''; for d in "$root"/*/; do n=$(basename "$d"); [ -f "$d/summary.json" ] || continue; printf '%s"%s"' "$sep" "$n"; sep=','; done; printf ']\n'; } > "$root/.projects.tmp"
+chmod 644 "$root/.projects.tmp" && mv "$root/.projects.tmp" "$root/projects.json"
 echo "vibe-map: 已更新 $p"

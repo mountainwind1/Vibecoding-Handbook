@@ -15,7 +15,7 @@
     | 导入 | 接口 | src/x/ingest/*cli.py |        层 = 页面/接口/数据/逻辑/测试/外部/关键词；路径是 glob（* 可跨目录），首条命中为准
     发布：<命令，{dir} = 产物目录>                  可选：--publish 时执行（云端托管由项目自己定，任何工具都能跑）
 """
-import argparse, collections, datetime, fnmatch, json, os, re, shlex, subprocess, sys, tempfile, urllib.error, urllib.request
+import argparse, collections, datetime, fnmatch, json, os, re, shlex, subprocess, sys, tempfile, time, urllib.error, urllib.request
 
 LAYERS = ["页面", "接口", "数据", "逻辑"]            # 卡片上显示的层；测试只计入投入
 MS_RE = re.compile(r"^## (?:[^M]*[:：] *)?(M[-A-Za-z0-9.]*[0-9][A-Za-z0-9]*)\s*[·:：]?\s*(.*)$")   # 同 prog：只认二级标题
@@ -46,6 +46,16 @@ def clean(s):
 
 def trim(s, n):
     return s if len(s) <= n else s[:n - 1] + "…"
+
+
+def ids_short(ids):
+    """SEC-11 SEC-12 SEC-15 → SEC-11、12、15（同前缀只写一次）"""
+    out, last = [], None
+    for i in ids:
+        pre, _, num = i.rpartition("-")
+        out.append(num if pre == last and num else i)
+        last = pre
+    return "、".join(out)
 
 
 # ---- 模块地图 ------------------------------------------------------------------
@@ -118,12 +128,15 @@ class Mapper:
 # ---- PLAN.md（读法同 prog）--------------------------------------------------------
 def parse_plan(text):
     mss, debts, flags = [], [], []
+    st = re.search(r"^\**当前状态[:：]\s*(.+)$", text, re.M)
+    status = trim(clean(st.group(1).split("。")[0]), 160) if st else ""
     ms = item = None
     heading = ""
     for line in text.splitlines():
         if line.startswith("## "):
             m = MS_RE.match(line)
-            ms = m and dict(id=m.group(1), name=clean(re.split(r"——|（", m.group(2))[0]), closed=bool(CLOSED_RE.search(line)), tasks=[])
+            ms = m and dict(id=m.group(1), name=clean(re.split(r"——|（", m.group(2))[0]), closed=bool(CLOSED_RE.search(line)), tasks=[],
+                            note=clean((re.search(r"——\s*([^，,]*?已收口[^—]*?）|✅[^—]*)", line) or re.search("$", "")).group(0).lstrip("—✅ ")))
             if ms: mss.append(ms)
             item, heading = None, line[3:].strip()
             continue
@@ -151,7 +164,7 @@ def parse_plan(text):
             f = FLAG_RE.match(line.strip())
             if f and ms and not ms["closed"]:
                 flags.append(dict(kind=f.group(1), text=f.group(2), task=item["id"], title=item["title"], ms=ms["id"]))
-    return mss, debts, flags
+    return mss, debts, flags, status
 
 
 # ---- 定位：问题在哪个模块 / 哪一层 ---------------------------------------------------
@@ -196,6 +209,58 @@ class Locator:
         return m.start() if m else -1
 
 
+# ---- 当前这一步：正在做的功能走到哪一步、这一步的问题是什么（页面和总入口最先看的就是这个）------------
+GATE_RE = re.compile(r"收口|命门|单独")
+PROBLEM_ORDER = {"待拍板": 0, "CI": 1, "偏差": 2}
+
+
+def ci_problem(repo, branch):
+    """当前分支最近一次 CI 失败 = 这一步的问题。没装 gh / 离线 / MAP_NO_GH=1 就不查。"""
+    if os.environ.get("MAP_NO_GH") or not branch:
+        return None
+    try:
+        r = subprocess.run(["gh", "run", "list", "--branch", branch, "-L", "1", "--json", "conclusion,workflowName,url"],
+                           cwd=repo, capture_output=True, text=True, timeout=8)
+        run_ = (json.loads(r.stdout or "[]") or [None])[0]
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        return None
+    if run_ and run_.get("conclusion") in ("failure", "timed_out"):
+        return dict(kind="CI", task="", text=f"{run_.get('workflowName', 'CI')} 在 {branch} 上失败", here=True)
+    return None
+
+
+def focus_of(repo, mss, debts, flags, status, cur, nxt, branch):
+    log = [l.split("\x1f", 2) for l in git(repo, "log", "--no-merges", "-n", "300", "--format=%h\x1f%ct\x1f%s").splitlines() if l.count("\x1f") == 2]
+    def recent(key, n=3):
+        hit = [dict(sha=h, t=int(t), subject=trim(s, 120)) for h, t, s in log
+               if not key or re.search(r"(?<![A-Za-z0-9])" + re.escape(key) + r"(?![0-9A-Za-z])", s)]
+        return hit[:n]
+    last = dict(sha=log[0][0], t=int(log[0][1]), subject=trim(log[0][2], 120)) if log else None
+    gate = lambda t: bool(GATE_RE.search(t["title"] + t["text"][:300]))
+    if cur:
+        steps = [dict(id=t["id"] or "—", title=trim(t["title"], 60), done=t["done"], current=t is nxt, gate=gate(t),
+                      external=bool(t["id"]) and not TASK_ID.match(t["id"]))
+                 for t in cur["tasks"]]
+        probs = [dict(kind=f["kind"], task=f["task"], text=f["text"], here=bool(nxt) and f["task"] == nxt["id"]) for f in flags if f["ms"] == cur["id"]]
+        probs += [dict(kind=CATEGORY.get(t["id"].split("-")[0], "欠账"), task=t["id"], text=t["title"], here=False)
+                  for t in cur["tasks"] if not t["done"] and t["id"] and not TASK_ID.match(t["id"])]
+        ci = ci_problem(repo, branch)
+        probs += [ci] if ci else []
+        probs.sort(key=lambda p: (PROBLEM_ORDER.get(p["kind"], 3), not p["here"]))
+        step = nxt and dict(id=nxt["id"], title=nxt["title"], gate=gate(nxt), index=cur["tasks"].index(nxt) + 1, total=len(cur["tasks"]))
+        return dict(state="active", milestone=dict(id=cur["id"], name=cur["name"], done=sum(t["done"] for t in cur["tasks"]), total=len(cur["tasks"])),
+                    steps=steps, step=step, problems=probs, ci="fail" if ci else None,
+                    progress=(nxt and nxt["id"] and recent(nxt["id"])) or recent(cur["id"]) or recent(""), last=last)
+    done = [m for m in mss if m["closed"]]
+    prev = done[-1] if done else None
+    groups = collections.defaultdict(list)
+    for d in debts:
+        groups[CATEGORY.get(d["id"].split("-")[0], "欠账")].append(d["id"])
+    probs = [dict(kind=k, task="", text=f"{len(v)} 项：{ids_short(v)}", here=False) for k, v in sorted(groups.items(), key=lambda kv: -RANK.get(kv[0], 0))]
+    return dict(state="idle", milestone=prev and dict(id=prev["id"], name=prev["name"], note=prev["note"]), status=status,
+                steps=[], step=None, problems=probs, ci=None, progress=recent(prev["id"]) if prev else recent(""), last=last)
+
+
 # ---- git：投入与当前位置 ---------------------------------------------------------
 def churn(repo, mapper, cur_id):
     out = git(repo, "log", "--no-merges", "--no-renames", "--numstat", "--format=\x1e%s")
@@ -225,7 +290,7 @@ def build(repo, map_text, plan_text):
     mapped = bool(rules)
     rules = rules or auto_rules(files)
     mapper = Mapper(rules)
-    mss, debts, flags = parse_plan(plan_text)
+    mss, debts, flags, status = parse_plan(plan_text)
     open_ms = [m for m in mss if not m["closed"] and m["tasks"]]
     cur = open_ms[0] if open_ms else None
     nxt = next((t for t in cur["tasks"] if not t["done"]), None) if cur else None
@@ -277,12 +342,14 @@ def build(repo, map_text, plan_text):
         pins, _ = locate(nxt["title"], nxt["text"])
         focus = pins[0]["mod"] if pins else None
 
+    branch = git(repo, "branch", "--show-current").strip()
+    focus_now = focus_of(repo, mss, debts, flags, status, cur, nxt, branch)
     ms_cols = [m["id"] for m in mss if any(m["id"] in v["heat"] for v in mods.values())]
     ms_cols += sorted({k for v in mods.values() for k in v["heat"]} - set(ms_cols) - {"其他"}) + ["其他"]
     return dict(
         project=os.path.basename(os.path.abspath(repo)),
         generated=datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-        branch=git(repo, "branch", "--show-current").strip() or "(detached)",
+        branch=branch or "(detached)", now=focus_now,
         head=git(repo, "log", "-1", "--format=%h %s").strip()[:90] if file_all else "",
         mapped=mapped, publish=publish, focus=focus,
         progress=dict(closed=sum(m["closed"] for m in mss), total=len(mss)),
@@ -300,16 +367,6 @@ def build(repo, map_text, plan_text):
 
 
 # ---- archify：同一份事实画成交互架构图 ---------------------------------------------
-def ids_short(ids):
-    """SEC-11 SEC-12 SEC-15 → SEC-11、12、15（同前缀只写一次）"""
-    out, last = [], None
-    for i in ids:
-        pre, _, num = i.rpartition("-")
-        out.append(num if pre == last and num else i)
-        last = pre
-    return "、".join(out)
-
-
 def to_archify(d, repo):
     mods = {m["name"]: m for m in d["modules"]}
     lanes = [[n for n in l["mods"] if n in mods] for l in d["lanes"]]
@@ -449,6 +506,38 @@ def publicly_readable(url):
         return None
 
 
+DEFAULT_ROOT = os.path.expanduser("~/.cache/vibe-map")
+
+
+def summary_of(data):
+    """总入口每个项目一行要的东西：正在做什么、第几步、有没有卡在用户这里。"""
+    n = data["now"]
+    return dict(project=data["project"], generated=int(time.time()), state=n["state"], milestone=n["milestone"], step=n["step"],
+                waiting=sum(p["kind"] == "待拍板" for p in n["problems"]),
+                deviations=sum(p["kind"] == "偏差" and p["here"] for p in n["problems"]),    # 只数这一步的；别的偏差到收口才裁决
+                ci=n["ci"], top=n["problems"][0] if n["problems"] else None, last=n["last"])
+
+
+def portal_page(summaries=None):
+    """总入口：嵌入摘要（本机，file:// 下 fetch 不可用）或留空、在服务器上读 projects.json。"""
+    tpl = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "portal.html.tpl"), encoding="utf-8").read()
+    return tpl.replace("__SUMMARIES__", json.dumps(summaries, ensure_ascii=False).replace("</", "<\\/") if summaries is not None else "null")
+
+
+def write_local_portal(root):
+    items = []
+    for name in sorted(os.listdir(root)):
+        f = os.path.join(root, name, "summary.json")
+        if not name.startswith(".") and os.path.isfile(f):
+            try:
+                items.append(json.load(open(f, encoding="utf-8")))
+            except ValueError:
+                pass
+    with open(os.path.join(root, "index.html"), "w", encoding="utf-8") as f:
+        f.write(portal_page(items))
+    return items
+
+
 def read_map(repo, path=None):
     if path:
         return open(path, encoding="utf-8").read()
@@ -479,6 +568,12 @@ def run(repo, out, map_path=None, use_archify=True, publish=False, quiet=False):
             print(f"map：archify 没通过（exit {r.returncode}），只出自带页面。诊断：{(r.stdout or r.stderr)[-800:]}", file=sys.stderr)
     with open(os.path.join(out, "index.html"), "w", encoding="utf-8") as f:
         f.write(render_page(data))
+    with open(os.path.join(out, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary_of(data), f, ensure_ascii=False)
+    with open(os.path.join(out, "portal.html"), "w", encoding="utf-8") as f:   # 发布时服务器把它装成总入口
+        f.write(portal_page())
+    if os.path.realpath(os.path.dirname(os.path.abspath(out))) == os.path.realpath(DEFAULT_ROOT):
+        write_local_portal(DEFAULT_ROOT)                                    # 本机总入口：~/.cache/vibe-map/index.html
     n = len(data["issues"])
     say(f"项目地图：{os.path.join(out, 'index.html')}（{len(data['modules'])} 个模块，{n} 个问题，{n - len(data['unplaced'])} 个已定位"
         f"{'；含 archify 架构图' if data['archify'] else ''}）")
@@ -503,6 +598,7 @@ def run(repo, out, map_path=None, use_archify=True, publish=False, quiet=False):
 
 # ---- 自检：先证明它能失败（改守卫前后都跑；CI 没装 archify，只验 spec 形状）--------------------
 def selftest():
+    os.environ["MAP_NO_GH"] = "1"                                # 夹具仓库的 origin 是假的，不许去查 CI
     fails = []
     def check(name, cond):
         if not cond: fails.append(name)
@@ -572,6 +668,16 @@ def selftest():
         check(f"M2 动到的是 查询 API·页面：{mod['查询 API']['now']}", mod["查询 API"]["now"].get("页面") == 40 and d["focus"] == "查询 API")
         check("未提交改动记在 查询 API", mod["查询 API"]["dirty"].get("接口") == 1)
         check("发布命令读到了", d["publish"] and d["publish"].startswith("cp -R {dir}"))
+        # 3b 当前这一步：步骤、这一步的问题（待拍板排第一、标「这一步」）、最近进展
+        n = d["now"]
+        check(f"正在做 M2，当前第 2/6 步 M2-T2：{n['step']}", n["state"] == "active" and n["step"] and (n["step"]["id"], n["step"]["index"], n["step"]["total"]) == ("M2-T2", 2, 6))
+        check(f"这一步的问题：待拍板排第一且标在这一步：{n['problems'][:1]}", n["problems"] and n["problems"][0]["kind"] == "待拍板" and n["problems"][0]["here"])
+        check("别的任务上的偏差也列出，但不算这一步", any(p["kind"] == "偏差" and not p["here"] for p in n["problems"]))
+        check("里程碑里的 SEC- 条目算外部 / 欠账问题", any(p["task"] == "SEC-1" for p in n["problems"]))
+        check(f"最近进展取自提交：{[c['subject'] for c in n['progress']]}", any("M2-T1" in c["subject"] for c in n["progress"]))
+        idle = build(repo, read_map(repo), "# P\n\n## M1 · 地基 —— 已收口（0.1.0，2026-01-01）\n- [x] **M1-T1 · x**\n- [ ] **SEC-9 · y**\n")["now"]
+        check(f"全部收口 → 空闲，给出上一个里程碑和挂着的问题：{idle['milestone']} {idle['problems']}", idle["state"] == "idle" and idle["milestone"]["note"] == "已收口（0.1.0，2026-01-01）"
+              and idle["problems"] and idle["problems"][0]["kind"] == "安全")
         # 4 archify spec 形状（archify 的硬上限）
         s = to_archify(d, repo)
         idset = {c["id"] for c in s["components"]}
@@ -594,6 +700,16 @@ def selftest():
         check("问题原文里的 </script> 被转义", "</script><b>" not in page and "<\\/script>" in page)
         check("页面自包含：不从第三方加载任何资源", not re.search(r"""<(?:link|script|img|iframe)[^>]+(?:src|href)=["']?(?:https?:)?//""", page))
         check("发布命令执行了（{dir} 换成产物目录）", os.path.exists(os.path.join(tmp, "pub", "index.html")))
+        summ = json.load(open(os.path.join(out, "summary.json"), encoding="utf-8"))
+        check(f"项目摘要：{summ.get('step')} 等你拍板 {summ.get('waiting')}", summ["project"] == "demo" and summ["waiting"] == 1 and summ["step"]["id"] == "M2-T2")
+        check(f"摘要里的偏差只数这一步的（M2-T1 上那条不算）：{summ.get('deviations')}", summ["deviations"] == 0)
+        check("产物里带服务器用的总入口（不嵌数据，读 projects.json）", "const EMBED = null;" in open(os.path.join(out, "portal.html"), encoding="utf-8").read())
+        proot = os.path.join(tmp, "proot"); os.makedirs(os.path.join(proot, "demo")); os.makedirs(os.path.join(proot, "drafts"))
+        json.dump(dict(summ, top=dict(kind="待拍板", task="M2-T2", text="</script>x")), open(os.path.join(proot, "demo", "summary.json"), "w"))
+        items = write_local_portal(proot)
+        lp = open(os.path.join(proot, "index.html"), encoding="utf-8").read()
+        check("本机总入口：只收有摘要的目录、摘要嵌进页面、</script> 转义", [i["project"] for i in items] == ["demo"] and "__SUMMARIES__" not in lp
+              and "</script>x" not in lp)
         # 6 发布后的公开可读自查
         import http.server, threading
         class H(http.server.BaseHTTPRequestHandler):
@@ -625,14 +741,20 @@ def selftest():
         # 7 服务器接收端（server/vibe-map-receive）：名字守卫、没有 index.html 不替换、丢符号链接
         recv = os.path.join(os.path.dirname(os.path.abspath(__file__)), "server", "vibe-map-receive")
         site = os.path.join(tmp, "site"); os.makedirs(site)
+        os.makedirs(os.path.join(site, "legacy"))                  # 没有 summary.json 的旧目录
         pkg = os.path.join(tmp, "pkg"); os.makedirs(pkg)
         open(os.path.join(pkg, "index.html"), "w").write("v1")
+        open(os.path.join(pkg, "portal.html"), "w").write("portal")
+        open(os.path.join(pkg, "summary.json"), "w").write("{}")
         os.symlink("/etc/passwd", os.path.join(pkg, "leak"))
         def receive(name, src):
             tarball = subprocess.run(["tar", "-C", src, "-cf", "-", "."], capture_output=True, check=True).stdout
             return subprocess.run(["sh", recv], input=tarball, capture_output=True, env=dict(os.environ, VIBE_MAP_ROOT=site, SSH_ORIGINAL_COMMAND=name)).returncode
         check("接收端：合法项目名收下", receive("Demo", pkg) == 0 and open(os.path.join(site, "Demo", "index.html")).read() == "v1")
         check("接收端：包里的符号链接被丢掉", not os.path.lexists(os.path.join(site, "Demo", "leak")))
+        idx, pj = os.path.join(site, "index.html"), os.path.join(site, "projects.json")
+        check("接收端：把包里的 portal.html 装成总入口", os.path.exists(idx) and open(idx).read() == "portal")
+        check(f"接收端：项目列表只含有摘要的目录（旧目录 legacy 不算）", os.path.exists(pj) and json.load(open(pj)) == ["Demo"])
         check("接收端：跳目录 / 带斜杠 / 隐藏名 / 夹带命令 一律拒", all(receive(n, pkg) == 2 for n in ("../x", "a/b", ".x", "id; cat /etc/passwd", "")))
         empty = os.path.join(tmp, "empty"); os.makedirs(empty)
         check("接收端：没有 index.html 拒收，旧内容不动", receive("Demo", empty) == 3 and open(os.path.join(site, "Demo", "index.html")).read() == "v1")
@@ -657,7 +779,7 @@ def main():
     a = ap.parse_args()
     if a.selftest:
         return selftest()
-    out = a.out or os.path.join(os.path.expanduser("~/.cache/vibe-map"), os.path.basename(os.path.abspath(a.repo)))
+    out = a.out or os.path.join(DEFAULT_ROOT, os.path.basename(os.path.abspath(a.repo)))
     run(a.repo, out, a.map, not a.no_archify, a.publish, a.quiet)
 
 
