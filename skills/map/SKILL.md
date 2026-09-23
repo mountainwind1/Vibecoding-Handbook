@@ -27,7 +27,39 @@ description: 项目地图（只读，试验中）——把业务流程上的模�
 
 托管不绑定任何一家 agent 工具：「模块地图」里写一行 `发布：<命令>`（`{dir}` = 产物目录），`map.py --publish` 执行它——普通 shell 命令，任何 agent 或 CI 都能跑。页面里有安全欠账原文，**只发到要登录才能看的地方**。每次发布后脚本会像匿名浏览器一样打开发布出去的网址（跟随跳转、不带登录）：能看到地图就**响亮地失败**（退出码非 0），提示先收紧访问控制。
 
-**推荐：Cloudflare Workers 静态资源 + Cloudflare Access**（2026-09 按官方文档核实，尚未在真实项目实测）：Access 免费版 50 人，手机浏览器可用，发布是一条命令。一次性配置由用户本人做（涉及开账号、登记付款方式，agent 不代做）：
+**有自己的服务器：用它**（数据不出自己的机器，也不用再开账号）。产物是纯静态文件、不向任何第三方发请求，任何 Web 服务器都能放：
+
+1. **HTTPS 是前提**：口令认证（basic auth）走明文 HTTP 等于把口令公开。Caddy 自动签证书最省事；已经有 nginx 就加一段 location。
+2. **访问控制二选一**：① 口令（basic auth，手机浏览器会弹登录框、能记住）；② 只在 Tailscale / VPN 内网监听，公网根本到不了（手机要装客户端）。
+3. **单独的发布账号**，只给 `/srv/vibe-map` 的写权限；本机和 CI 用 SSH 密钥发布。
+
+   ```
+   # Caddy（Caddyfile）：口令哈希用 caddy hash-password 生成
+   map.example.com {
+       root * /srv/vibe-map
+       basic_auth {
+           you <口令哈希>
+       }
+       header X-Robots-Tag "noindex, nofollow"
+       file_server
+   }
+
+   # nginx：口令文件用 htpasswd -c /etc/nginx/vibe-map.htpasswd you 生成
+   location /vibe-map/ {
+       alias /srv/vibe-map/;
+       auth_basic "vibe-map";
+       auth_basic_user_file /etc/nginx/vibe-map.htpasswd;
+       add_header X-Robots-Tag "noindex, nofollow";
+   }
+   ```
+
+4. 地图里的发布行，**末尾 echo 网址**，发布后的自查才有地址可查（不登录应得到 401）：
+   `发布：rsync -az --delete {dir}/ deploy@你的服务器:/srv/vibe-map/<项目名>/ && echo https://map.example.com/<项目名>/`
+   只在内网监听时**不要** echo 网址：自查从你自己的机器发起，本来就在内网里，会误报"公开可读"。
+
+服务器在中国大陆、用域名走 80 / 443 端口要先完成 ICP 备案；不想备案就走内网方案，或用境外服务器。
+
+**没有服务器：Cloudflare Workers 静态资源 + Cloudflare Access**（2026-09 按官方文档核实，尚未在真实项目实测）：Access 免费版 50 人，手机浏览器可用，发布是一条命令。一次性配置由用户本人做（涉及开账号、登记付款方式，agent 不代做）：
 
 1. 注册 Cloudflare，开通 Zero Trust Free（要登记付款方式，免费版不扣费）。
 2. **先开访问控制、再第一次发布**：Workers & Pages → "Protect all Workers"（连以后新建的 Worker 一起保护，第一次发布就不会有公开的空窗；账号里若有别的公开 Worker 会被一起锁上，那就改成只保护这一个）。策略只放行自己的邮箱；有协作者就加具体邮箱并开"一次性 PIN"登录。**不要用"邮箱域名 = gmail.com"**——那等于放行所有 Gmail 用户。

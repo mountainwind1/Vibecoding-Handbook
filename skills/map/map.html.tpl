@@ -1,15 +1,12 @@
 <!-- vibe-map-page -->
 <title>__TITLE__</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
 :root{
   --ground:#F3F5F6; --surface:#FFFFFF; --sunk:#E9EDEF; --ink:#15202B; --muted:#5A6772; --faint:#8995A0; --rule:#D3DADF;
   --accent:#0E6F8C; --accent-soft:#DCEEF4; --on-accent:#FFFFFF;
   --crit:#B83227; --crit-soft:#F8E1DE; --warn:#9A6212; --warn-soft:#F7EBD3; --ok:#2F7D55; --ext:#56657A; --ext-soft:#E4E9EF;
   --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;   /* 不从外网拉字体：私有页面不向第三方发请求，大陆访问 Google Fonts 会卡住渲染 */
   --r:10px;
 }
 @media (prefers-color-scheme: dark){

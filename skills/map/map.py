@@ -592,6 +592,7 @@ def selftest():
         run(repo, out, use_archify=False, publish=True, quiet=True)
         page = open(os.path.join(out, "index.html"), encoding="utf-8").read()
         check("问题原文里的 </script> 被转义", "</script><b>" not in page and "<\\/script>" in page)
+        check("页面自包含：不从第三方加载任何资源", not re.search(r"""<(?:link|script|img|iframe)[^>]+(?:src|href)=["']?(?:https?:)?//""", page))
         check("发布命令执行了（{dir} 换成产物目录）", os.path.exists(os.path.join(tmp, "pub", "index.html")))
         # 6 发布后的公开可读自查
         import http.server, threading
