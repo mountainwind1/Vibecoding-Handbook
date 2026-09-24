@@ -41,7 +41,9 @@
 - 关键人工或浏览器验证证据。
 - 风险和遗留项。
 
-证据链写回 PLAN.md 的 Evidence 字段；大型 Phase 可另建 `EVIDENCE.md`，PLAN 只留链接。
+证据链写回 PLAN.md 的 Evidence 字段（每任务 ≤ 800 字）；大型 Phase 可另建 `EVIDENCE.md`，PLAN 只留链接。
+
+证据产物：仓库只留报告与结果摘要（{如 REPORT.md、RESULT.json、封条 SHA}）；大于 {1 MiB} 的文件与逐条原始记录放外置证据区（{路径}），仓库留 SHA-256 清单；新增文件大小门禁：{pre-commit 与 CI 的命令}。
 
 ## Integration Gate
 

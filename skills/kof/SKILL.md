@@ -81,7 +81,7 @@ PLAN.md 按里程碑时间序排列，**第一个 `- [ ]` 就是最早的未完�
 
 1. `AGENTS.md` + `CLAUDE.md` + `ENGINEERING.md` —— 协作入口、TIER1 硬规则、根命令与业务红线。（Claude Code 里它们已随 `CLAUDE.md` 的 import 自动载入，本会话没 /clear 过就不必重读。）
 2. `PLAN.md` —— **当前里程碑整段**：里程碑头（目标 / DoD / 原则 / 范围边界）+ 目标任务描述（即验收标准）+ 已完成任务的 Evidence 与踩坑留痕（前序设计决定都在里面）。
-3. `DECISIONS.md` —— 最新 2–3 条（当前 D 编号见索引表尾部）。
+3. `DECISIONS.md` —— 索引表 + 最新 2–3 条（当前 D 编号见索引表尾部）；**不读 `DECISIONS-ARCHIVE.md`**，除非任务点名某条已归档决策。
 4. 按需：涉及契约/字段 → `PRD.md §11` 对应里程碑段；涉及前端视觉 → `DESIGN.md`。
 5. （启用了 `.vibe/` 的项目）`.vibe/project.json` 与当前 `.vibe/tasks/{task-id}.json`；与 PLAN 冲突时停下交 Integration Owner 裁决。
 
@@ -114,7 +114,7 @@ gh run list --branch main --limit 1   # main CI 状态（红着不准起跑）
 
 ### 第四步 · 任务收尾（每任务）
 
-`ENGINEERING.md` 的四根命令从仓库根逐条跑绿（**不接管道**——`| tail` 会吞掉退出码）→ 代码改动 + PLAN.md 勾选 + **Evidence 回填**（做了什么、关键取舍为什么、实测数字、踩坑留痕）+ DECISIONS 追加（如有），**同一个 commit** → message 用 `M{x}-T{y}: 描述` 并说清"为什么"。
+`ENGINEERING.md` 的四根命令从仓库根逐条跑绿（**不接管道**——`| tail` 会吞掉退出码）→ 代码改动 + PLAN.md 勾选 + **Evidence 回填**（≤ 800 字：做了什么、关键取舍为什么、实测数字、踩坑留痕；逐条输出与日志放 PR 描述）+ DECISIONS 追加（如有），**同一个 commit** → message 用 `M{x}-T{y}: 描述` 并说清"为什么"。
 
 - **需要用户知道的事，在 Evidence 里单独起一行**：`待拍板：…`（需要用户决定——会让自动循环停下）/ `偏差：…`（与完成定义不一致、没测到的范围、临时绕过——不停，挂到收口裁决）。如实写；不写的偏差就是收口时的意外。**标记行只写一句话**（是什么 + 影响到哪），细节留在 Evidence 正文。
 - PLAN / PRD / DECISIONS **只增量编辑，永不重生成**；改完 `git diff` 核对 checkbox 数量与结构未被破坏。
