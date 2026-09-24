@@ -284,6 +284,17 @@ def churn(repo, mapper, cur_id):
     return per, now, file_all, file_now
 
 
+def project_name(repo):
+    """项目名取 origin 仓库名，不取目录名：agent 常在 worktree 里干活，目录名不是项目名（实测装到 worktree 时总入口冒出 ta-map）。"""
+    try:
+        name = re.sub(r"\.git$", "", git(repo, "remote", "get-url", "origin").strip().rstrip("/").split("/")[-1].split(":")[-1])
+        if re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9._-]{0,63}", name):
+            return name
+    except subprocess.CalledProcessError:
+        pass
+    return os.path.basename(git(repo, "rev-parse", "--show-toplevel").strip())
+
+
 def build(repo, map_text, plan_text):
     files = [f for f in git(repo, "ls-files", "-z").split("\0") if f]
     lanes, rules, kw, publish = parse_map(map_text) if map_text else ([], [], {}, None)
@@ -347,7 +358,7 @@ def build(repo, map_text, plan_text):
     ms_cols = [m["id"] for m in mss if any(m["id"] in v["heat"] for v in mods.values())]
     ms_cols += sorted({k for v in mods.values() for k in v["heat"]} - set(ms_cols) - {"其他"}) + ["其他"]
     return dict(
-        project=os.path.basename(os.path.abspath(repo)),
+        project=project_name(repo),
         generated=datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
         branch=branch or "(detached)", now=focus_now,
         head=git(repo, "log", "-1", "--format=%h %s").strip()[:90] if file_all else "",
@@ -603,7 +614,7 @@ def selftest():
     def check(name, cond):
         if not cond: fails.append(name)
     with tempfile.TemporaryDirectory() as tmp:
-        repo = os.path.join(tmp, "demo")
+        repo = os.path.join(tmp, "demo-worktree")                # 目录名 ≠ 仓库名，项目名要取 origin
         g = ["git", "-C", repo, "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
         def write(p, s):
             os.makedirs(os.path.dirname(os.path.join(repo, p)) or repo, exist_ok=True)
@@ -701,7 +712,7 @@ def selftest():
         check("页面自包含：不从第三方加载任何资源", not re.search(r"""<(?:link|script|img|iframe)[^>]+(?:src|href)=["']?(?:https?:)?//""", page))
         check("发布命令执行了（{dir} 换成产物目录）", os.path.exists(os.path.join(tmp, "pub", "index.html")))
         summ = json.load(open(os.path.join(out, "summary.json"), encoding="utf-8"))
-        check(f"项目摘要：{summ.get('step')} 等你拍板 {summ.get('waiting')}", summ["project"] == "demo" and summ["waiting"] == 1 and summ["step"]["id"] == "M2-T2")
+        check(f"项目摘要（项目名取 origin 而不是目录名）：{summ.get('project')} {summ.get('step')} 等你拍板 {summ.get('waiting')}", summ["project"] == "demo" and summ["waiting"] == 1 and summ["step"]["id"] == "M2-T2")
         check(f"摘要里的偏差只数这一步的（M2-T1 上那条不算）：{summ.get('deviations')}", summ["deviations"] == 0)
         check("产物里带服务器用的总入口（不嵌数据，读 projects.json）", "const EMBED = null;" in open(os.path.join(out, "portal.html"), encoding="utf-8").read())
         proot = os.path.join(tmp, "proot"); os.makedirs(os.path.join(proot, "demo")); os.makedirs(os.path.join(proot, "drafts"))
@@ -779,7 +790,7 @@ def main():
     a = ap.parse_args()
     if a.selftest:
         return selftest()
-    out = a.out or os.path.join(DEFAULT_ROOT, os.path.basename(os.path.abspath(a.repo)))
+    out = a.out or os.path.join(DEFAULT_ROOT, project_name(a.repo))
     run(a.repo, out, a.map, not a.no_archify, a.publish, a.quiet)
 
 
