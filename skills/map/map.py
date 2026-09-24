@@ -14,6 +14,7 @@
     数据流：上游 → 导入 → 数据库 → 查询 API      一行一条业务线，箭头 = 流程顺序；没进业务线的模块算「横切」
     | 导入 | 接口 | src/x/ingest/*cli.py |        层 = 页面/接口/数据/逻辑/测试/外部/关键词；路径是 glob（* 可跨目录），首条命中为准
     发布：<命令，{dir} = 产物目录>                  可选：--publish 时执行（云端托管由项目自己定，任何工具都能跑）
+    项目：<名字>                                    可选：同一仓库有多份本地拷贝（文件夹名不同）时统一项目名
 """
 import argparse, collections, datetime, fnmatch, json, os, re, shlex, subprocess, sys, tempfile, time, urllib.error, urllib.request
 
@@ -60,9 +61,13 @@ def ids_short(ids):
 
 # ---- 模块地图 ------------------------------------------------------------------
 def parse_map(text):
-    lanes, rules, kw, publish = [], [], collections.defaultdict(list), None
+    lanes, rules, kw, publish, project = [], [], collections.defaultdict(list), None, None
     for line in text.splitlines():
         s = line.strip()
+        m = re.match(r"^项目[：:]\s*(\S+)\s*$", s)
+        if m:
+            project = m.group(1) if re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9._-]{0,63}", m.group(1)) else None   # 名字要能当目录名
+            continue
         m = re.match(r"^发布[：:]\s*(.+)$", s)
         if m:
             publish = m.group(1).strip().strip("`") if "{dir}" in m.group(1) or "{" not in m.group(1) else None
@@ -79,7 +84,12 @@ def parse_map(text):
                 continue
             items = [p.strip().strip("`") for p in re.split(r"[,，、]", c[2]) if p.strip().strip("`")]
             (kw[c[0]].extend(items) if c[1] == "关键词" else rules.append((c[0], c[1], items)))
-    return lanes, rules, dict(kw), publish
+    return lanes, rules, dict(kw), publish, project
+
+
+def project_of(repo, map_text):
+    """地图里写了「项目：」就用它（同一仓库的多份本地拷贝文件夹名不同，实测 TidePoint 有两份），否则取主目录名。"""
+    return (parse_map(map_text)[4] if map_text else None) or project_name(repo)
 
 
 def guess_layer(p):
@@ -300,7 +310,7 @@ def project_name(repo):
 
 def build(repo, map_text, plan_text):
     files = [f for f in git(repo, "ls-files", "-z").split("\0") if f]
-    lanes, rules, kw, publish = parse_map(map_text) if map_text else ([], [], {}, None)
+    lanes, rules, kw, publish, _ = parse_map(map_text) if map_text else ([], [], {}, None, None)
     mapped = bool(rules)
     rules = rules or auto_rules(files)
     mapper = Mapper(rules)
@@ -361,7 +371,7 @@ def build(repo, map_text, plan_text):
     ms_cols = [m["id"] for m in mss if any(m["id"] in v["heat"] for v in mods.values())]
     ms_cols += sorted({k for v in mods.values() for k in v["heat"]} - set(ms_cols) - {"其他"}) + ["其他"]
     return dict(
-        project=project_name(repo),
+        project=project_of(repo, map_text),
         generated=datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
         branch=branch or "(detached)", now=focus_now,
         head=git(repo, "log", "-1", "--format=%h %s").strip()[:90] if file_all else "",
@@ -718,6 +728,8 @@ def selftest():
         subprocess.run(g + ["worktree", "add", "-q", "--detach", wt], check=True)
         bw = build(wt, read_map(wt), plan)
         check(f"在 worktree 里生成，项目名仍是主目录名：{bw['project']}", bw["project"] == "demo-worktree")
+        check("地图里写了「项目：」就用它", build(wt, read_map(wt) + "\n项目：TidePoint\n", plan)["project"] == "TidePoint")
+        check("「项目：」的名字不能当目录名就不用", project_of(wt, read_map(wt) + "\n项目：../x\n") == "demo-worktree")
         summ = json.load(open(os.path.join(out, "summary.json"), encoding="utf-8"))
         check(f"项目摘要（项目名 = 主目录名，不是 origin 仓库名 demo）：{summ.get('project')} {summ.get('step')} 等你拍板 {summ.get('waiting')}", summ["project"] == "demo-worktree" and summ["waiting"] == 1 and summ["step"]["id"] == "M2-T2")
         check(f"摘要里的偏差只数这一步的（M2-T1 上那条不算）：{summ.get('deviations')}", summ["deviations"] == 0)
@@ -797,7 +809,7 @@ def main():
     a = ap.parse_args()
     if a.selftest:
         return selftest()
-    out = a.out or os.path.join(DEFAULT_ROOT, project_name(a.repo))
+    out = a.out or os.path.join(DEFAULT_ROOT, project_of(a.repo, read_map(a.repo, a.map)))
     run(a.repo, out, a.map, not a.no_archify, a.publish, a.quiet)
 
 
