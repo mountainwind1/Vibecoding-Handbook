@@ -285,9 +285,12 @@ def churn(repo, mapper, cur_id):
 
 
 def project_name(repo):
-    """项目名取 origin 仓库名，不取目录名：agent 常在 worktree 里干活，目录名不是项目名（实测装到 worktree 时总入口冒出 ta-map）。"""
+    """项目名 = 主工作目录的文件夹名（经 git 公共目录找到主 checkout）。
+    不取当前目录名：agent 常在 worktree 里干活（实测总入口冒出 ta-map）；也不取 origin 仓库名：
+    本地叫 geoid 的项目在 GitHub 上叫 SeaGeocode，用户认的是本地名。"""
     try:
-        name = re.sub(r"\.git$", "", git(repo, "remote", "get-url", "origin").strip().rstrip("/").split("/")[-1].split(":")[-1])
+        common = git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir").strip()
+        name = os.path.basename(os.path.dirname(common.rstrip("/"))) if os.path.basename(common.rstrip("/")) == ".git" else ""
         if re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9._-]{0,63}", name):
             return name
     except subprocess.CalledProcessError:
@@ -541,7 +544,7 @@ def write_local_portal(root):
         f = os.path.join(root, name, "summary.json")
         if not name.startswith(".") and os.path.isfile(f):
             try:
-                items.append(json.load(open(f, encoding="utf-8")))
+                items.append(dict(json.load(open(f, encoding="utf-8")), dir=name))   # 链接按目录走，不按摘要里的项目名
             except ValueError:
                 pass
     with open(os.path.join(root, "index.html"), "w", encoding="utf-8") as f:
@@ -711,15 +714,19 @@ def selftest():
         check("问题原文里的 </script> 被转义", "</script><b>" not in page and "<\\/script>" in page)
         check("页面自包含：不从第三方加载任何资源", not re.search(r"""<(?:link|script|img|iframe)[^>]+(?:src|href)=["']?(?:https?:)?//""", page))
         check("发布命令执行了（{dir} 换成产物目录）", os.path.exists(os.path.join(tmp, "pub", "index.html")))
+        wt = os.path.join(tmp, "wt-somewhere")
+        subprocess.run(g + ["worktree", "add", "-q", "--detach", wt], check=True)
+        bw = build(wt, read_map(wt), plan)
+        check(f"在 worktree 里生成，项目名仍是主目录名：{bw['project']}", bw["project"] == "demo-worktree")
         summ = json.load(open(os.path.join(out, "summary.json"), encoding="utf-8"))
-        check(f"项目摘要（项目名取 origin 而不是目录名）：{summ.get('project')} {summ.get('step')} 等你拍板 {summ.get('waiting')}", summ["project"] == "demo" and summ["waiting"] == 1 and summ["step"]["id"] == "M2-T2")
+        check(f"项目摘要（项目名 = 主目录名，不是 origin 仓库名 demo）：{summ.get('project')} {summ.get('step')} 等你拍板 {summ.get('waiting')}", summ["project"] == "demo-worktree" and summ["waiting"] == 1 and summ["step"]["id"] == "M2-T2")
         check(f"摘要里的偏差只数这一步的（M2-T1 上那条不算）：{summ.get('deviations')}", summ["deviations"] == 0)
         check("产物里带服务器用的总入口（不嵌数据，读 projects.json）", "const EMBED = null;" in open(os.path.join(out, "portal.html"), encoding="utf-8").read())
         proot = os.path.join(tmp, "proot"); os.makedirs(os.path.join(proot, "demo")); os.makedirs(os.path.join(proot, "drafts"))
         json.dump(dict(summ, top=dict(kind="待拍板", task="M2-T2", text="</script>x")), open(os.path.join(proot, "demo", "summary.json"), "w"))
         items = write_local_portal(proot)
         lp = open(os.path.join(proot, "index.html"), encoding="utf-8").read()
-        check("本机总入口：只收有摘要的目录、摘要嵌进页面、</script> 转义", [i["project"] for i in items] == ["demo"] and "__SUMMARIES__" not in lp
+        check("本机总入口：只收有摘要的目录、带目录名、摘要嵌进页面、</script> 转义", [i.get("dir") for i in items] == ["demo"] and "__SUMMARIES__" not in lp
               and "</script>x" not in lp)
         # 6 发布后的公开可读自查
         import http.server, threading
