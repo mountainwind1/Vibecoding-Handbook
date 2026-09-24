@@ -61,7 +61,7 @@ const ago = t => { const s = Date.now() / 1000 - t; return s < 90 ? "刚刚" : s
 async function load() {
   if (EMBED) return EMBED;
   const names = await (await fetch("projects.json", {cache: "no-store"})).json();
-  const all = await Promise.all(names.map(n => fetch(encodeURIComponent(n) + "/summary.json", {cache: "no-store"}).then(r => r.ok ? r.json() : null).catch(() => null)));
+  const all = await Promise.all(names.map(n => fetch(encodeURIComponent(n) + "/summary.json", {cache: "no-store"}).then(r => r.ok ? r.json() : null).then(j => j && Object.assign(j, {dir: n})).catch(() => null)));
   return all.filter(Boolean);
 }
 function card(p) {
@@ -74,8 +74,8 @@ function card(p) {
     : `<div class="line">没有正在开发的功能${m ? ` · 上一个 <span class="id">${esc(m.id)}</span>${esc(m.note || "已收口")}` : ""}<span class="gate">下一步：立项</span></div>`;
   const top = p.top ? `<div class="line muted">${esc(p.top.kind)}${p.top.task ? " · " + esc(p.top.task) : ""}：${esc(p.top.text)}</div>` : "";
   const tone = p.waiting || p.ci === "fail" ? "crit" : active ? "active" : "";
-  return `<a class="proj ${tone}" href="${encodeURIComponent(p.project)}/index.html"><span class="bar"></span><span class="body">
-      <span class="top"><span class="name">${esc(p.project)}</span>${badges}<span class="upd">${p.last ? "最近提交 " + ago(p.last.t) : ""}</span></span>
+  return `<a class="proj ${tone}" href="${encodeURIComponent(p.dir || p.project)}/index.html"><span class="bar"></span><span class="body">
+      <span class="top"><span class="name">${esc(p.dir || p.project)}</span>${badges}<span class="upd">${p.last ? "最近提交 " + ago(p.last.t) : ""}</span></span>
       ${lines}${top}</span></a>`;
 }
 load().then(list => {
