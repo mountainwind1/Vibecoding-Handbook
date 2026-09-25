@@ -297,7 +297,7 @@ def churn(repo, mapper, cur_id):
 def project_name(repo):
     """项目名 = 主工作目录的文件夹名（经 git 公共目录找到主 checkout）。
     不取当前目录名：agent 常在 worktree 里干活（实测总入口冒出 ta-map）；也不取 origin 仓库名：
-    本地叫 geoid 的项目在 GitHub 上叫 SeaGeocode，用户认的是本地名。"""
+    本地文件夹名与 GitHub 仓库名可以不同（实测遇到过），用户认的是本地名。"""
     try:
         common = git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir").strip()
         name = os.path.basename(os.path.dirname(common.rstrip("/"))) if os.path.basename(common.rstrip("/")) == ".git" else ""

@@ -19,6 +19,8 @@
 >
 > v7 增补（破坏性 · 结构调整）：**默认路径只留被真实项目验证过的机制。** ① 协作状态回归人读文档——多 Agent 协作协议（源自 v5.3：Ownership / Claim / Writable Scope / Worktree / Integration Gate / Evidence）是默认，**`.vibe/` 机器状态层降为实验**（附录 C）：它设计于 v6，但至今没有任何真实项目用过，而"v6 模板 + v5.3 模式"跑完了 25+ 个里程碑——默认路径和被验证路径此前是反的。② **`xreview` 异构复核门**（阶段 5.1）：把 diff 发给别家模型各出一份只读报告，外发限制机制化（默认只发 diff、凭证永不发、设计文档与口令·权限类文件须用户授权并点名文件与接收方、评审方拿不到仓库）。③ **项目模板移入 `templates/`**，手册仓库根目录不再有模板（它们曾被当成本仓库的真指令加载）；流程以 skill 形式交付（`skills/`：`kof` / `prog` / `close` / `xreview`，`agents/security-auditor`）。从 v6.x 升级见 `MIGRATION-v6-to-v7.md`。
 >
+> v7.1 增补（流程瘦身，依据三个真实项目的只读实测）：**只有"出错后不能靠回滚代码恢复"的才是重型**（动数据 / 动钱 / 动安全边界 / 动对外契约，写明命门），代价大、逻辑复杂靠测试兜底、不升档；**收口按风险分级**——A5 只在新增或改动信任边界时做、复测最多一轮、做了 A5 不再跑 `xreview`、旅程只重走改动的那段；**每任务 Evidence ≤ 800 字**、证据产物只留摘要；**DECISIONS 每次收口归档**（`close` 第 5 步）。试验中、不进默认路径：`map` 项目地图（`skills/map/`）。
+>
 > 配套文件：模板都在 `templates/`——`AGENTS.md`(通用 Agent 入口) · `ENGINEERING.md`(工程规则) · `CLAUDE.md`(Claude 适配层) · `PRD.md`(活的需求规格) · `PLAN.md`(人读任务叙事 + 任务状态) · `DECISIONS.md`(决策日志) · `CHANGELOG.md`(版本日志) · `DESIGN.md`(设计系统，阶段 1.5 产出) · `SELFCHECK.md`(按需自查协议) · `DEPLOY.md`(部署手册) · `OPERATIONS.md`(运维备忘) · `.vibe/`(实验 · 可选)。可安装的流程：`skills/`（`kof` 开工 · `prog` 进度块 · `close` 收口门 · `xreview` 异构复核）与 `agents/security-auditor`。
 
 ---

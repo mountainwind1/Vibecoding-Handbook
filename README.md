@@ -18,7 +18,9 @@
   <a href="https://github.com/mountainwind1/Vibecoding-Handbook/commits/main"><img src="https://img.shields.io/github/last-commit/mountainwind1/Vibecoding-Handbook" alt="Last commit"></a>
 </p>
 
-> 当前最新版：**v7 · Field-Proven**——默认路径只留被真实项目验证过的机制：多 Agent 协作协议（任务状态在人读的 PLAN.md）为默认、`.vibe/` 降为实验；新增 `xreview` 异构模型复核门（把 diff 发给别家模型各出一份只读报告，外发限制机制化）；流程以可安装的 skill 交付（`kof` 开工 / `prog` 进度块 / `close` 收口门 / `xreview`）；项目模板在 [templates/](templates/)。**破坏性变更**，从 v6.x 升级见 [MIGRATION-v6-to-v7.md](MIGRATION-v6-to-v7.md)。v6 手册冻结于 v6.2。
+> 当前最新版：**v7.1 · 流程瘦身 + 项目地图（试验）**（在 v7 手册内以增补形式发布，非破坏性）：依据三个真实项目的只读实测给流程减重——只有“出错后不能靠回滚代码恢复”的才算重型任务；A5 安全审计只在新增或改动信任边界时做、复测最多一轮；每任务 Evidence ≤ 800 字；DECISIONS 每次收口归档。新增试验性的 `map` 项目地图（多项目总入口，每个项目「正在开发的功能在哪一步、这一步的问题」）。从 v7 升级见 [CHANGELOG](CHANGELOG.md)。
+>
+> 这一代的结构基线是 **v7 · Field-Proven**——默认路径只留被真实项目验证过的机制：多 Agent 协作协议（任务状态在人读的 PLAN.md）为默认、`.vibe/` 降为实验；新增 `xreview` 异构模型复核门（把 diff 发给别家模型各出一份只读报告，外发限制机制化）；流程以可安装的 skill 交付（`kof` 开工 / `prog` 进度块 / `close` 收口门 / `xreview`）；项目模板在 [templates/](templates/)。**破坏性变更**，从 v6.x 升级见 [MIGRATION-v6-to-v7.md](MIGRATION-v6-to-v7.md)。v6 手册冻结于 v6.2。
 
 ## 这是什么
 
