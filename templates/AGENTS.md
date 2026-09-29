@@ -87,10 +87,12 @@ Current State：
 What changed：
 Evidence：
 Known risks：
+Session agreements（会话内约定：用户说过、文件里没有的）：
+In flight（在途：PR / CI / 后台任务 / 等回答的问题）：
 Next step：
 ```
 
-默认写进 PLAN 对应任务的 Evidence。（启用了实验性 `.vibe/` 的项目：同时写入对应 task JSON 的 `handoff` 字段。）
+默认写进 PLAN 对应任务的 Evidence，标 `交接：`；清上下文前（`/kof c` 清场阶段）必写。（启用了实验性 `.vibe/` 的项目：同时写入对应 task JSON 的 `handoff` 字段。）
 
 ## Skills 迁移建议
 
