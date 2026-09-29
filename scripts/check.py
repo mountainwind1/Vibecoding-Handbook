@@ -11,7 +11,7 @@ def tracked(): return [p for p in subprocess.run(["git", "ls-files", "-z"], capt
 
 # ① skill 脚本自检
 for cmd in (["bash", "skills/prog/prog.sh", "--selftest"], [sys.executable, "skills/xreview/xreview.py", "--selftest"],
-            [sys.executable, "skills/map/map.py", "--selftest"]):
+            [sys.executable, "skills/map/map.py", "--selftest"], [sys.executable, "skills/kof/session-start.py", "--selftest"]):
     r = subprocess.run(cmd, capture_output=True, text=True, env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1", PROG_NO_GH="1"))
     if r.returncode != 0 or "selftest ok" not in r.stdout:
         out = (r.stdout + r.stderr).strip()
