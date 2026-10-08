@@ -70,9 +70,10 @@ plan_block() { # $1 = PLAN.md  $2 = full(0/1)
     for (i=nc;i>2;i--) { st=trim(cell[i]); if (st!="") break }
     addtask(id, id " · " trim(cell[3]), (index(st,"✅")>0)); task=""; next
   }
-  ms!="" && task!="" {                      # 任务块内以「待拍板：」「偏差：」开头的行 = 待你处理
+  ms!="" && task!="" {                      # 任务块内以「待拍板：」「偏差：」开头的行 = 待你处理；「发现：」= 范围外，另计
     l=trim($0); sub(/^- */,"",l); sub(/^Evidence(:|：) */,"",l)
     if (l ~ /^(待拍板|偏差)(:|：)/) { nf++; fms[nf]=ms; ftxt[nf]=task " " l; if (l ~ /^待拍板/) blocked[n]=1 }
+    else if (l ~ /^发现(:|：)/) { ng++; gms[ng]=ms; gtxt[ng]=task " " l }
   }
   END {
     for (i=1;i<=nms;i++) { m=order[i]; d=done[m]+0; t=total[m]+0
@@ -122,6 +123,12 @@ plan_block() { # $1 = PLAN.md  $2 = full(0/1)
     for (i=1;i<=nf;i++) if (fms[i]==cur) { k++
       txt=ftxt[i]; if (!full && txt !~ /待拍板(:|：)/) txt=utrunc(txt,150)     # 待拍板要马上决定→全文；偏差到收口才裁决→精简模式只给一行
       printf "%s %s %s\n", (k==1?"待处理  ":"        "), (k<=9?c[k]:"·"), txt }
+    # 发现：范围外的问题 / 机会——不停、不裁决，由用户决定进不进 PLAN；精简模式只报条数，--full 逐条列
+    g=0; for (i=1;i<=ng;i++) if (gms[i]==cur) g++
+    if (g>0) {
+      if (full) { for (i=1;i<=ng;i++) if (gms[i]==cur) { k++; printf "%s %s %s\n", (k==1?"待处理  ":"        "), (k<=9?c[k]:"·"), gtxt[i] } }
+      else { k++; printf "%s %s 发现 %d 条（范围外，等你裁决进不进 PLAN；--full 看全文）\n", (k==1?"待处理  ":"        "), (k<=9?c[k]:"·"), g }
+    }
     if (k==0) print "待处理   无"
     if (!full) exit 0
     if (rest!="") printf "距收口   %s\n", utrunc(rest,160)
@@ -234,6 +241,16 @@ EOF
   [ "$(PROG_NO_GH=1 bash "$SELF" --full "$tmp/P4.md" | grep -c '结尾标记ZZ')" = "2" ] || { echo "selftest FAIL(试用反馈): --full 下偏差应为全文"; fail=1; }
   for want in "结尾标记ZZ" "【常规】【单独+确认】" "卡在你这里：先处理下面的「待拍板」"; do
     printf '%s' "$out4" | grep -qF -- "$want" || { echo "selftest FAIL(试用反馈): 缺少「$want」"; fail=1; }
+  done
+  # 发现：精简只报条数、不阻塞；--full 逐条列
+  printf '## M5 · 发现标记\n- [x] **M5-T1 · a**\n  Evidence：好\n  发现：导入器没有大小上限\n  发现：旧端点无人调用\n- [ ] **M5-T2 · b** —【常规】【可批量】\n' > "$tmp/P8.md"
+  out8=$(PROG_NO_GH=1 bash "$SELF" "$tmp/P8.md")
+  printf '%s' "$out8" | grep -qF -- "① 发现 2 条" || { echo "selftest FAIL(发现): 精简应报条数"; fail=1; }
+  printf '%s' "$out8" | grep -qF -- "导入器没有大小上限" && { echo "selftest FAIL(发现): 精简不应列全文"; fail=1; }
+  printf '%s' "$out8" | grep -qF -- "（不需要你）" || { echo "selftest FAIL(发现): 发现不该阻塞下一步"; fail=1; }
+  out8f=$(PROG_NO_GH=1 bash "$SELF" --full "$tmp/P8.md")
+  for want in "① T1 发现：导入器没有大小上限" "② T1 发现：旧端点无人调用"; do
+    printf '%s' "$out8f" | grep -qF -- "$want" || { echo "selftest FAIL(发现): --full 缺少「$want」"; fail=1; }
   done
   # 下一个任务是命门、且没有待拍板 → 命门提示
   printf '## M6 · 丁\n- [ ] **M6-T1 · 鉴权** —【重型】【单独+确认】（命门）\n' > "$tmp/P5.md"
