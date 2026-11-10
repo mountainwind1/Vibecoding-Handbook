@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """close · 收口开销自测（第 0 步）：从 git + PLAN 现算本里程碑与上一里程碑的开销，只提示不拦。
 
-数字：重型占比 / Evidence 中位字数 / 收口提交数与小时 / CI 重跑次数（--gh 才算）/ DECISIONS 体积 / 每会话自动读进的规则字数。
+数字：重型占比 / Evidence 中位字数 / 问你的次数与自决的次数 / 收口提交数与小时 / CI 重跑次数（--gh 才算）/ DECISIONS 体积 / 每会话自动读进的规则字数。
+问你的次数 = 任务块里「待拍板：」「已拍板」开头的行数；自决的次数 =「已自决」开头的行数（只数 PLAN 里留了痕的）。
 为什么：规则会衰减，数字不会——一个项目的 Evidence 中位从 1,510 字涨到 3,038 字没人发现；写了"效果待实测"的改动，要有机制自动回答。
 头两次收口只看数，数稳了再升门禁。
 用法：python3 overhead.py [--repo .] [--ms M14] [--gh] [--selftest]
@@ -19,6 +20,8 @@ HEAD = re.compile(r"^## +(M[-A-Za-z0-9.]*)")
 FIELD = re.compile(r"^\s*(- )?(状态|Owner|Worktree|Writable Scope|内容|依赖|完成定义)\s*[:：]")
 EVID = re.compile(r"^\s*(- )?Evidence\s*[:：]\s*")
 HEAVY = re.compile(r"【重型】|命门|【单独")
+ASK = re.compile(r"^\s*(- )?(Evidence\s*[:：]\s*)?(待拍板\s*[:：]|已拍板)")
+SELF = re.compile(r"^\s*(- )?(Evidence\s*[:：]\s*)?已自决")
 CLOSE_SUBJ = re.compile(r"收口|close|A5|xreview|走查|复测|复验|归档", re.I)
 
 
@@ -63,7 +66,8 @@ def parse_tasks(text):
                     ev += b2.strip()
                 break
         tasks.append(dict(id=tid, ms=tid.rsplit("-T", 1)[0], heavy=bool(HEAVY.search(title)),
-                          ev=len(re.sub(r"\s", "", ev)), done=done))
+                          ev=len(re.sub(r"\s", "", ev)), done=done,
+                          ask=sum(bool(ASK.match(b)) for b in block), self=sum(bool(SELF.match(b)) for b in block)))
         i = j
     return tasks
 
@@ -158,6 +162,7 @@ def numbers(repo, ms, tasks, use_gh):
     c = rec["close"]
     dec, auto = sizes(repo, last) if last else (None, None)
     return dict(heavy=(heavy, len(mine)), ev=(statistics.median(evs) if evs else None),
+                ask=sum(t["ask"] for t in mine), self=sum(t["self"] for t in mine),
                 close_n=c["n"], close_h=c["hours"], close_doc=c["doc"],
                 rerun=(reruns(repo, c["t0"], c["t1"]) if use_gh else None), dec=dec, auto=auto)
 
@@ -184,6 +189,7 @@ def arrow(prev, cur, kind):
 
 
 ROWS = [("重型占比", "heavy", "ratio", True), ("Evidence 中位字数", "ev", "n", True),
+        ("问你的次数", "ask", "n", True), ("自决的次数", "self", "n", False),
         ("收口提交数", "close_n", "n", True), ("收口跨度（小时）", "close_h", "h", True),
         ("收口改动的文档行", "close_doc", "n", True), ("CI 重跑次数", "rerun", "n", True),
         ("DECISIONS 体积", "dec", "k", True), ("每会话自动读进", "auto", "k", True)]
@@ -254,9 +260,9 @@ def selftest():
         w("CLAUDE.md", "@AGENTS.md\n" + "y" * 50)
         w("DECISIONS.md", "d" * 100)
         w("PLAN-ARCHIVE.md", "## M1 · 甲 ✅\n- [x] **M1-T1 · 做数据** —【重型】【单独+确认】（命门）\n  Evidence：" + "a" * 100 +
-          "\n  内容：x\n- [x] **M1-T2 · 页面** —【常规】\n  Evidence：" + "b" * 300 + "\n")
+          "\n  内容：x\n  已拍板（D1）：先迁移后切流量\n  已拍板（D2）：保留旧表 30 天\n  待拍板：要不要删旧表\n- [x] **M1-T2 · 页面** —【常规】\n  Evidence：" + "b" * 300 + "\n")
         w("PLAN.md", "当前里程碑：M2\n已完成里程碑：M1\n## M2 · 乙\n- [x] **M2-T1 · a** —【常规】【可批量】\n  Evidence：" + "c" * 50 +
-          "\n- [x] **M2-T2 · b** —【常规】（命门：改契约）\n  Evidence：" + "d" * 70 + "\n  依赖：T1\n- [ ] **M2-T3 · 收口验收门**\n")
+          "\n  依赖：无\n  已自决（D3）：用游标分页\n  已自决：缓存 60 秒\n- [x] **M2-T2 · b** —【常规】（命门：改契约）\n  Evidence：" + "d" * 70 + "\n  依赖：T1\n  已拍板（D4）：契约加可选字段\n- [ ] **M2-T3 · 收口验收门**\n  说明：正文里提到 待拍板： 不算\n")
         commit("M1-T1: 做数据", T)
         w("page.py", "p = 1\n")
         commit("M1-T2: 页面", T + 3600)
@@ -275,6 +281,8 @@ def selftest():
         n1, n2 = numbers(tmp, "M1", tasks, False), numbers(tmp, "M2", tasks, False)
         check(n1["heavy"] == (1, 2) and n2["heavy"] == (1, 3), f"重型占比应为 1/2 与 1/3，得到 {n1['heavy']} {n2['heavy']}")
         check(n1["ev"] == 200 and n2["ev"] == 60, f"Evidence 中位应为 200 与 60（只算已勾且有 Evidence 的），得到 {n1['ev']} {n2['ev']}")
+        check(n1["ask"] == 3 and n2["ask"] == 1, f"问你的次数应为 3 与 1（行首的待拍板： / 已拍板才算），得到 {n1['ask']} {n2['ask']}")
+        check(n1["self"] == 0 and n2["self"] == 2, f"自决的次数应为 0 与 2，得到 {n1['self']} {n2['self']}")
         check(n1["close_n"] == 2 and abs(n1["close_h"] - 1.0) < 1e-6, f"M1 收口应 2 次提交、跨 1.0 小时，得到 {n1['close_n']} {n1['close_h']}")
         check(n1["close_doc"] == 10 + 2, f"M1 收口改动文档行应为 12（notes 10 行 + DECISIONS 单行改写 1+1），得到 {n1['close_doc']}")
         check(n2["close_n"] == 0, "M2 还没收口，收口提交应为 0")
@@ -284,6 +292,8 @@ def selftest():
         check("Evidence 中位字数" in out and "       200        60  ↓" in out, "表格应显示 200 → 60 ↓")
         check("⚠ 变差：DECISIONS 体积" in out, "DECISIONS 300 → 500 应报变差")
         check("重型占比" not in out.split("⚠")[-1], "重型占比 50% → 33% 不该算变差")
+        check("自决的次数" not in out.split("⚠")[-1], "自决的次数 0 → 2 不该算变差")
+        check("⚠" in render("M1", "M2", n1, n2) and "问你的次数" in render("M1", "M2", n1, n2).split("⚠")[-1], "问你的次数 1 → 3 应报变差")
         check("--gh 才算" in out, "没开 --gh 应提示")
         # 没有上一里程碑也能出表
         check("上一里程碑 无" in render("M2", None, n2, None), "没有上一里程碑时应显示「无」")
