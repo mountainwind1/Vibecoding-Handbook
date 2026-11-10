@@ -95,7 +95,7 @@
 - 默认只发被评审的代码 diff。凭证文件（`.env*` / 私钥 / `auth.json` …）永不外发。
 - 全局设计文档、名字涉及口令·权限的文件：默认扣下；要发必须**先问用户**，授权要点名接收方（`--authorized` + `--authorized-for`）。
 - 本项目追加的禁区（调用 `xreview` 时逐条 `--withhold`）：{如 `data/**`、`deploy/**`、`*客户*`}
-- 常设授权（可选，须记 DECISIONS）：{如 D××：PRD 可发给 Codex；不发给其他厂商}
+- 常设授权（开工时问用户一次，须记 DECISIONS；关键节点的第三方评审靠它，没有就每次先问）：{如 D××：PRD、DESIGN.md、契约文件、设计稿可发给 Codex；不发给其他厂商}
 
 ## Vendor-neutral Adapter
 
