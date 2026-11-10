@@ -74,7 +74,6 @@ plan_block() { # $1 = PLAN.md  $2 = full(0/1)
     l=trim($0); sub(/^- */,"",l); sub(/^Evidence(:|：) */,"",l)
     if (l ~ /^(待拍板|偏差)(:|：)/) { nf++; fms[nf]=ms; ftxt[nf]=task " " l; if (l ~ /^待拍板/) blocked[n]=1 }
     else if (l ~ /^发现(:|：)/) { ng++; gms[ng]=ms; gtxt[ng]=task " " l }
-    else if (l ~ /^已自决/) { ns++; sms[ns]=ms; stxt[ns]=task " " l }   # agent 按推荐项自己定了、已执行：不停，用户可事后否决
   }
   END {
     for (i=1;i<=nms;i++) { m=order[i]; d=done[m]+0; t=total[m]+0
@@ -115,8 +114,9 @@ plan_block() { # $1 = PLAN.md  $2 = full(0/1)
     else {
       hint="（不需要你）"
       if (blocked[nxti]) hint="← 卡在你这里：先处理下面的「待拍板」"
-      else if (nxt ~ /收口/) hint="← 收口门：走 close，合并等你"
-      else if (nxt ~ /单独|命门/) hint="← 命门：单独 PR、独立评审，合并等你"
+      else if (nxt ~ /收口/) hint="← 收口门：走 close，需要你到场"
+      else if (nxt ~ /单独|命门/) hint="← 命门：做完会停下等你核验"
+      else if (nxt ~ /重型/) hint="← 重型：先出计划等你确认"
       printf "下一步   %s  %s\n", tshow(nxt,110), hint
     }
     split("① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨",c," "); k=0
@@ -129,13 +129,7 @@ plan_block() { # $1 = PLAN.md  $2 = full(0/1)
       if (full) { for (i=1;i<=ng;i++) if (gms[i]==cur) { k++; printf "%s %s %s\n", (k==1?"待处理  ":"        "), (k<=9?c[k]:"·"), gtxt[i] } }
       else { k++; printf "%s %s 发现 %d 条（范围外，等你裁决进不进 PLAN；--full 看全文）\n", (k==1?"待处理  ":"        "), (k<=9?c[k]:"·"), g }
     }
-    # 已自决：不算待处理（已经做了）；精简只报条数，--full 逐条列，用户看到不同意就否决（回滚）
-    s=0; for (i=1;i<=ns;i++) if (sms[i]==cur) s++
     if (k==0) print "待处理   无"
-    if (s>0) {
-      if (full) { j=0; for (i=1;i<=ns;i++) if (sms[i]==cur) { j++; printf "%s %s\n", (j==1?"已自决  ":"        "), stxt[i] } }
-      else printf "已自决   %d 条（已按推荐项执行，不同意就说，会回滚；--full 看全文）\n", s
-    }
     if (!full) exit 0
     if (rest!="") printf "距收口   %s\n", utrunc(rest,160)
     other=""
@@ -260,21 +254,10 @@ EOF
   done
   # 下一个任务是命门、且没有待拍板 → 命门提示
   printf '## M6 · 丁\n- [ ] **M6-T1 · 鉴权** —【重型】【单独+确认】（命门）\n' > "$tmp/P5.md"
-  PROG_NO_GH=1 bash "$SELF" "$tmp/P5.md" | grep -qF -- "命门：单独 PR、独立评审，合并等你" || { echo "selftest FAIL(命门提示)"; fail=1; }
-  # 已自决：不进待处理、不阻塞；精简只报条数，--full 逐条列
-  printf '## M7 · 自决标记\n- [x] **M7-T1 · a**\n  Evidence：好\n  已自决（D12）：分页用游标不用偏移\n  已自决：缓存 60 秒\n- [ ] **M7-T2 · b** —【常规】【可批量】\n' > "$tmp/P9.md"
-  out9=$(PROG_NO_GH=1 bash "$SELF" "$tmp/P9.md")
-  printf '%s' "$out9" | grep -qF -- "已自决   2 条" || { echo "selftest FAIL(已自决): 精简应报 2 条"; fail=1; }
-  printf '%s' "$out9" | grep -qF -- "待处理   无" || { echo "selftest FAIL(已自决): 不应进待处理"; fail=1; }
-  printf '%s' "$out9" | grep -qF -- "分页用游标" && { echo "selftest FAIL(已自决): 精简不应列全文"; fail=1; }
-  printf '%s' "$out9" | grep -qF -- "（不需要你）" || { echo "selftest FAIL(已自决): 不该阻塞下一步"; fail=1; }
-  out9f=$(PROG_NO_GH=1 bash "$SELF" --full "$tmp/P9.md")
-  for want in "已自决   T1 已自决（D12）：分页用游标不用偏移" "T1 已自决：缓存 60 秒"; do
-    printf '%s' "$out9f" | grep -qF -- "$want" || { echo "selftest FAIL(已自决): --full 缺少「$want」"; fail=1; }
-  done
+  PROG_NO_GH=1 bash "$SELF" "$tmp/P5.md" | grep -qF -- "命门：做完会停下等你核验" || { echo "selftest FAIL(命门提示)"; fail=1; }
   # 下一个任务是收口任务 → 提示需要用户到场
   printf '## M5 · 丙\n- [x] **M5-T1 · 做了**\n- [ ] **M5-T2 · 收口：部署与实机走查**\n' > "$tmp/P3.md"
-  PROG_NO_GH=1 bash "$SELF" "$tmp/P3.md" | grep -qF -- "收口门：走 close，合并等你" || { echo "selftest FAIL(收口提示)"; fail=1; }
+  PROG_NO_GH=1 bash "$SELF" "$tmp/P3.md" | grep -qF -- "收口门：走 close，需要你到场" || { echo "selftest FAIL(收口提示)"; fail=1; }
   # 全部收口的 PLAN：不应把已收口里程碑当成当前里程碑
   printf '## M1 · 甲 ✅\n- [ ] **EXT-9 · 欠账**\n## M2 · 乙 —— 已收口\n' > "$tmp/P2.md"
   out2=$(PROG_NO_GH=1 bash "$SELF" --full "$tmp/P2.md")
