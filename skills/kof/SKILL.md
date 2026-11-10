@@ -139,7 +139,7 @@ hook 的 `compact` 触发点会注入同样的落点与用户原话。**把压�
 1. `AGENTS.md` + `CLAUDE.md` + `ENGINEERING.md` —— 协作入口、TIER1 硬规则、根命令与业务红线。（Claude Code 里它们已随 `CLAUDE.md` 的 import 自动载入，本会话没 /clear 过就不必重读。）
 2. `PLAN.md` —— **当前里程碑整段**：里程碑头（目标 / DoD / 原则 / 范围边界）+ 目标任务描述（即验收标准）+ 已完成任务的 Evidence 与踩坑留痕（前序设计决定都在里面）。
 3. `DECISIONS.md` —— 索引表 + 最新 2–3 条（当前 D 编号见索引表尾部）；**不读 `DECISIONS-ARCHIVE.md`**，除非任务点名某条已归档决策。
-4. 按需：涉及契约/字段 → `PRD.md §11` 对应里程碑段；涉及前端视觉 → `DESIGN.md`。
+4. 按需：涉及契约/字段 → `PRD.md §11` 对应里程碑段；涉及前端视觉 → `DESIGN.md`；要上服务器或改部署方式 → `DEPLOY.md`（没有就先建，模板在手册仓库 `templates/`）。
 5. （启用了 `.vibe/` 的项目）`.vibe/project.json` 与当前 `.vibe/tasks/{task-id}.json`；与 PLAN 冲突时停下交 Integration Owner 裁决。
 
 ### 第二步 · 自查时效状态（用命令，不用记忆）
@@ -182,6 +182,7 @@ gh run list --branch main --limit 1   # main CI 状态（红着不准起跑）
 - PLAN / PRD / DECISIONS **只增量编辑，永不重生成**；改完 `git diff` 核对 checkbox 数量与结构未被破坏。
 - 分支命名 `agent/{agent-id}/{task-id}-{slug}`；**禁止直推 main**（纯文档改动同样走分支 → PR）。
 - 禁止提交密钥、`.env`、生成物。
+- **在服务器上手工敲过的命令，当场记进 `DEPLOY.md`**（搭环境 → §B，日常操作 → §C；运行期的怪行为 → `OPERATIONS.md`），与本任务同一个 commit。只写在哪、不写口令。实证：7 个项目里 4 个没有部署文档，有的两份是在第 20 个里程碑之后才补的——那之前每次部署都靠翻聊天记录。
 - 装了 `map` skill 的项目：静默刷新项目地图（`python3 <map 目录>/map.py --quiet`，地图里配了「发布：」就加 `--publish`），成功时没有输出，不贴进对话。
 - **最后输出进度块**：按 `prog` skill 跑脚本、原样贴出。这是每个任务收尾的固定最后一步，不省略。
 
