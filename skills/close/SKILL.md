@@ -57,6 +57,13 @@ description: 里程碑收口验收门。当前里程碑的任务全部做完、�
 
 - `CHANGELOG.md` 顶部追加 `0.{n}.0`：至少一行"新用户现在能完成什么"；项目有版本号文件的（`package.json` / `pyproject.toml` / `__init__` 等）同步 bump，版本号处处一致。
 - 有子系统参考文档的：同步 `{DOMAIN}.md` 并更新「最后同步」戳。
+- **部署文档有没有过期**（只提示不拦）：看本里程碑有没有动部署相关文件而 `DEPLOY.md` 没动——
+
+  ```
+  git diff --name-only origin/main...HEAD | grep -iE '(^|/)(Dockerfile|Caddyfile|Procfile)|compose[^/]*\.ya?ml$|\.github/workflows/|nginx|\.env\.example$|(^|/)(deploy|infra|migrations|alembic)/|DEPLOY\.md$|OPERATIONS\.md$'
+  ```
+
+  输出里有别的文件、没有 `DEPLOY.md` → 对照 `DEPLOY.md` §A–§C 看哪一行过期了，当场补；确实不用改的，收口报告写一句依据。项目还没有 `DEPLOY.md` 但已经有生产环境 → 记一条 `发现：`。`DEPLOY.md` 本里程碑改过的 → 开只读子代理，只给它这一个文件，让它列出发布与回滚各敲哪几条命令；列不全就补。
 - 核对 DECISIONS 里**归属本里程碑**的伏笔是否都已兑现。
 - `DECISIONS.md` 分卷：已失效、被取代、已兑现的条目**整段剪切**移入 `DECISIONS-ARCHIVE.md`（只移不删），索引全量留在活跃文件并标「已归档」；改完核对：活跃文件条目数 + 归档增加数 = 原条目数。
 - 本里程碑任务清单**整段剪切**移入 `PLAN-ARCHIVE.md`，PLAN 留一行指针并把 `当前里程碑` 切到下一个。只移不删、不重排、不重生成；改完 `git diff` 核对：PLAN 减少的复选框数 = ARCHIVE 增加的复选框数。
@@ -83,7 +90,7 @@ DoD 实证：{做了什么操作、看到什么结果}
 A5：{未新增信任边界：<依据> / 高危 0、中 {n}、低 {n}（复测 1 轮）；未覆盖面 → 去向}
 偏差表：{条数；修 {n} · 延后 {n} · 接受 {n}；★ 需要你看的逐条列}
 已自决：{n} 条（全文 `prog --full`）　问你：{n} 次
-文档：CHANGELOG {版本} · PLAN 归档复选框 {a} = {b} · DECISIONS 归档 {n} 条 · {DOMAIN}.md 同步戳
+文档：DEPLOY {已同步 / 未动部署 / 过期已补} · CHANGELOG {版本} · PLAN 归档复选框 {a} = {b} · DECISIONS 归档 {n} 条 · {DOMAIN}.md 同步戳
 PR：{链接} · CI：{gh pr checks 原文}
 开销：{overhead.py 的变差项与一句解释；没有变差写「无变差」}
 等你：合并 PR（想亲自走一遍旅程，现在走）

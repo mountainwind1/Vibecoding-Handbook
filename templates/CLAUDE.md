@@ -91,3 +91,4 @@
 - 决策历史 → `DECISIONS.md`（只增不改）
 - 版本历史 → `CHANGELOG.md`（只增不改）
 - 视觉规范 → `DESIGN.md`（前端单一真相）
+- 环境在哪、怎么发、怎么退 → `DEPLOY.md`；运行期行为与出事先看哪 → `OPERATIONS.md`（在服务器上手工敲过的命令当场记进去）
