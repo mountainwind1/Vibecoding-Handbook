@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """close · 收口开销自测（第 0 步）：从 git + PLAN 现算本里程碑与上一里程碑的开销，只提示不拦。
 
-数字：重型占比 / Evidence 中位字数 / 收口提交数与小时 / CI 重跑次数（--gh 才算）/ DECISIONS 体积 / 每会话自动读进的规则字数。
+数字：重型占比 / 加固任务占比 / Evidence 中位字数 / 收口提交数与小时 / CI 重跑次数（--gh 才算）/ DECISIONS 体积 / 每会话自动读进的规则字数。
 为什么：规则会衰减，数字不会——一个项目的 Evidence 中位从 1,510 字涨到 3,038 字没人发现；写了"效果待实测"的改动，要有机制自动回答。
 头两次收口只看数，数稳了再升门禁。
 用法：python3 overhead.py [--repo .] [--ms M14] [--gh] [--selftest]
@@ -19,6 +19,9 @@ HEAD = re.compile(r"^## +(M[-A-Za-z0-9.]*)")
 FIELD = re.compile(r"^\s*(- )?(状态|Owner|Worktree|Writable Scope|内容|依赖|完成定义)\s*[:：]")
 EVID = re.compile(r"^\s*(- )?Evidence\s*[:：]\s*")
 HEAVY = re.compile(r"【重型】|命门|【单独")
+# 加固任务占比 = 标【加固】的任务 / 本里程碑除收口任务外的任务（手册「产品优先」：开发期 ≤ 2 个、功能 ≥ 2/3）
+HARDEN = re.compile(r"【加固】")
+CLOSE_TASK = re.compile(r"收口")
 CLOSE_SUBJ = re.compile(r"收口|close|A5|xreview|走查|复测|复验|归档", re.I)
 
 
@@ -63,6 +66,7 @@ def parse_tasks(text):
                     ev += b2.strip()
                 break
         tasks.append(dict(id=tid, ms=tid.rsplit("-T", 1)[0], heavy=bool(HEAVY.search(title)),
+                          harden=bool(HARDEN.search(title)), closing=bool(CLOSE_TASK.search(title)),
                           ev=len(re.sub(r"\s", "", ev)), done=done))
         i = j
     return tasks
@@ -157,7 +161,8 @@ def numbers(repo, ms, tasks, use_gh):
     rec, last = phase(repo, ms)
     c = rec["close"]
     dec, auto = sizes(repo, last) if last else (None, None)
-    return dict(heavy=(heavy, len(mine)), ev=(statistics.median(evs) if evs else None),
+    work = [t for t in mine if not t["closing"]]
+    return dict(heavy=(heavy, len(mine)), harden=(sum(t["harden"] for t in work), len(work)), ev=(statistics.median(evs) if evs else None),
                 close_n=c["n"], close_h=c["hours"], close_doc=c["doc"],
                 rerun=(reruns(repo, c["t0"], c["t1"]) if use_gh else None), dec=dec, auto=auto)
 
@@ -183,7 +188,7 @@ def arrow(prev, cur, kind):
     return "↑" if b > a else ("↓" if b < a else "→")
 
 
-ROWS = [("重型占比", "heavy", "ratio", True), ("Evidence 中位字数", "ev", "n", True),
+ROWS = [("重型占比", "heavy", "ratio", True), ("加固任务占比", "harden", "ratio", True), ("Evidence 中位字数", "ev", "n", True),
         ("收口提交数", "close_n", "n", True), ("收口跨度（小时）", "close_h", "h", True),
         ("收口改动的文档行", "close_doc", "n", True), ("CI 重跑次数", "rerun", "n", True),
         ("DECISIONS 体积", "dec", "k", True), ("每会话自动读进", "auto", "k", True)]
@@ -255,7 +260,7 @@ def selftest():
         w("DECISIONS.md", "d" * 100)
         w("PLAN-ARCHIVE.md", "## M1 · 甲 ✅\n- [x] **M1-T1 · 做数据** —【重型】【单独+确认】（命门）\n  Evidence：" + "a" * 100 +
           "\n  内容：x\n- [x] **M1-T2 · 页面** —【常规】\n  Evidence：" + "b" * 300 + "\n")
-        w("PLAN.md", "当前里程碑：M2\n已完成里程碑：M1\n## M2 · 乙\n- [x] **M2-T1 · a** —【常规】【可批量】\n  Evidence：" + "c" * 50 +
+        w("PLAN.md", "当前里程碑：M2\n已完成里程碑：M1\n## M2 · 乙\n- [x] **M2-T1 · a** —【常规】【可批量】【加固】\n  Evidence：" + "c" * 50 +
           "\n- [x] **M2-T2 · b** —【常规】（命门：改契约）\n  Evidence：" + "d" * 70 + "\n  依赖：T1\n- [ ] **M2-T3 · 收口验收门**\n")
         commit("M1-T1: 做数据", T)
         w("page.py", "p = 1\n")
@@ -282,7 +287,10 @@ def selftest():
         check(n1["auto"] == 161 and n2["auto"] == 161, f"自动读进应为 CLAUDE 61 + 导入的 AGENTS 100 = 161，得到 {n1['auto']}")
         out = render("M2", "M1", n2, n1)
         check("Evidence 中位字数" in out and "       200        60  ↓" in out, "表格应显示 200 → 60 ↓")
-        check("⚠ 变差：DECISIONS 体积" in out, "DECISIONS 300 → 500 应报变差")
+        worse = out.split("⚠ 变差：")[-1] if "⚠ 变差：" in out else ""
+        check("DECISIONS 体积" in worse, "DECISIONS 300 → 500 应报变差")
+        check(n1["harden"] == (0, 2) and n2["harden"] == (1, 2), f"加固任务占比应为 0/2 与 1/2（收口任务不计入分母），得到 {n1['harden']} {n2['harden']}")
+        check("加固任务占比" in worse, "加固任务占比 0% → 50% 应报变差")
         check("重型占比" not in out.split("⚠")[-1], "重型占比 50% → 33% 不该算变差")
         check("--gh 才算" in out, "没开 --gh 应提示")
         # 没有上一里程碑也能出表
